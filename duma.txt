@@ -1,0 +1,12 @@
+külön jon a megrendelő kellen csak nyitott akció.
+konkrétabb nem csak sell buy blind.
+több kereskedési mód
+
+
+
+gyak:
+Központi adatbázis aminek vannak interfacei (apik), jönnek bejövö adatok (dummy, ki mit csinált busz vonat stb) script ami random néha küld adatot.
+nosql, relációs adatbázis, elmenteni az eseményeket.
+Weboldal ahol statisztikákat számolna.
+Kifele menő api, le lehessen kérdezni dolgokat. Kellene egy példa amit valóban meg is kellene csinálni. Megcsinálni a karakteres oldalt ahol van a két karakter és ezeket ruházni. Vagy csak kitűző-
+ha nem fér bele az időben.
