@@ -1,0 +1,5 @@
+# build artifacts (ha később csinálnál)
+dist/
+node_modules/
+# helyi beállítás
+src/config.js

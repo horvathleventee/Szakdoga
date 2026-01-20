@@ -1,0 +1,5 @@
+Több tulajdoni lap feltöltése 1 felhasználóhoz
+licitet okosszerződésen belül ne a weboldal csinálja
+vásárlások kirakása ne csak eladás
+legyen blinde aukció meg sima ami most van
+chainlink oracle network megnézni hogy a minthez hozzákötni a dummy oldalam és automatán töltené az okosszerződést

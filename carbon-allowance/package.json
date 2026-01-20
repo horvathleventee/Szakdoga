@@ -1,0 +1,30 @@
+{
+  "name": "carbon-allowance",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:8546": "hardhat run scripts/deploy.js --network local8546",
+    "mint:local": "hardhat run scripts/mint.js --network localhost",
+    "mint:8546": "hardhat run scripts/mint.js --network local8546",
+    "test": "hardhat test",
+    "surrender:local": "hardhat run scripts/surrender.js --network localhost",
+    "env:sync": "node scripts/sync-env.js",
+    "bootstrap": "node scripts/bootstrap.js",
+    "dev": "next dev -p 3000 -w"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "dotenv": "^17.2.3",
+    "hardhat": "^2.26.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
