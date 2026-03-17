@@ -44,8 +44,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <div className="sidebar-kicker">Sepolia demo console</div>
-
       <nav className="nav">
         <div className="nav-section">Overview</div>
         {topItems.map((item) => (

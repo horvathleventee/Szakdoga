@@ -45,6 +45,7 @@ export default function AdminPage() {
     address: REG,
     functionName: 'operator',
   })
+  const operatorLoaded = Boolean(operatorAddr)
 
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
@@ -232,6 +233,8 @@ export default function AdminPage() {
   }
 
   if (!isConnected) return <div className="card">Please connect your wallet.</div>
+
+  if (!operatorLoaded) return <div className="card">Loading operator permissions...</div>
 
   if (!isOperator) {
     return (

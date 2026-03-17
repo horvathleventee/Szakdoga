@@ -4,8 +4,9 @@ export async function POST(req) {
   try {
     const { data, name, keyvalues } = await req.json()
 
-    const jwt = process.env.PINATA_JWT
-    if (!jwt) return new NextResponse('Missing PINATA_JWT', { status: 500 })
+    const rawJwt = String(process.env.PINATA_JWT || '').trim()
+    if (!rawJwt) return new NextResponse('Missing PINATA_JWT', { status: 500 })
+    const jwt = rawJwt.toLowerCase().startsWith('bearer ') ? rawJwt : `Bearer ${rawJwt}`
 
     const payload = {
       pinataContent: data,
@@ -23,7 +24,7 @@ export async function POST(req) {
 
     if (!r.ok) {
       const t = await r.text()
-      return new NextResponse(t, { status: 500 })
+      return new NextResponse(`Pinata JSON upload failed: ${t}`, { status: 500 })
     }
 
     const j = await r.json()

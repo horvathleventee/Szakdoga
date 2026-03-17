@@ -118,9 +118,6 @@ export default function Page() {
         {msg && <div style={{...styles.note, color: msg.startsWith('Hiba') ? '#b91c1c' : '#2563eb'}}>{msg}</div>}
 
         <p style={styles.help}>
-          Tipp: ezt az oldalt futtasd <b>külön porton</b> (pl. 4000). A dApp ezután a
-          <code> remainingQuota</code>-t már a blokkláncról olvassa, és a
-          <code> mintFromQuota</code> nem enged többet, mint a kvóta.
         </p>
       </section>
     </main>

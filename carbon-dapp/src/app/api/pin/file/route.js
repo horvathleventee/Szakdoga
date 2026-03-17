@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req) {
   try {
-    const jwt = process.env.PINATA_JWT
-    if (!jwt) return new NextResponse('Missing PINATA_JWT', { status: 500 })
+    const rawJwt = String(process.env.PINATA_JWT || '').trim()
+    if (!rawJwt) return new NextResponse('Missing PINATA_JWT', { status: 500 })
+    const jwt = rawJwt.toLowerCase().startsWith('bearer ') ? rawJwt : `Bearer ${rawJwt}`
 
     const incoming = await req.formData()
     const file = incoming.get('file')
@@ -37,7 +38,7 @@ export async function POST(req) {
 
     if (!r.ok) {
       const t = await r.text()
-      return new NextResponse(t, { status: 500 })
+      return new NextResponse(`Pinata file upload failed: ${t}`, { status: 500 })
     }
 
     const j = await r.json()
