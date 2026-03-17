@@ -2,18 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import QRCode from 'react-qr-code'
-import { parseAbiItem } from 'viem'
-import { usePublicClient } from 'wagmi'
-import { getLogsInChunks } from '../../lib/getLogsInChunks'
-
-const CAC = process.env.NEXT_PUBLIC_ALLOWANCE20_ADDRESS
-
-const SURRENDER_LOGGED_EVT = parseAbiItem(
-  'event SurrenderLogged(address indexed user, uint256 amount, uint16 periodId, uint256 timestamp, string displayName, bytes32 taxIdHash, string metadataURI, string docsURI)'
-)
 
 export default function ReportsPage() {
-  const client = usePublicClient()
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -22,14 +12,10 @@ export default function ReportsPage() {
     try {
       setLoading(true)
       setError('')
-
-      const data = await getLogsInChunks(client, {
-        address: CAC,
-        event: SURRENDER_LOGGED_EVT,
-        toBlock: 'latest',
-      })
-
-      setLogs(data)
+      const response = await fetch('/api/reports/surrenders', { cache: 'no-store' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data?.error || 'Failed to load reports')
+      setLogs(data.rows || [])
     } catch (e) {
       setError(e?.message || String(e))
     } finally {
@@ -39,13 +25,13 @@ export default function ReportsPage() {
 
   useEffect(() => {
     load()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   const totalsByYear = useMemo(() => {
     const map = new Map()
     for (const log of logs) {
-      const year = Number(log.args.periodId)
-      const amount = Number(log.args.amount ?? 0n)
+      const year = Number(log.periodId)
+      const amount = Number(log.amount || 0)
       map.set(year, (map.get(year) || 0) + amount)
     }
     return Array.from(map.entries()).sort((a, b) => a[0] - b[0])
@@ -54,19 +40,11 @@ export default function ReportsPage() {
   const latest = useMemo(() => {
     if (typeof window === 'undefined') return []
     const origin = window.location.origin
-
-    return logs.slice(-10).reverse().map((log, index) => {
-      const txHash = log.transactionHash
-      return {
-        key: `${log.blockHash}:${index}`,
-        user: String(log.args.user),
-        amount: String(log.args.amount),
-        periodId: String(log.args.periodId),
-        ts: Number(log.args.timestamp) * 1000,
-        txHash,
-        receiptUrl: `${origin}/receipt/${txHash}`,
-      }
-    })
+    return logs.slice(0, 10).map((log) => ({
+      ...log,
+      receiptUrl: `${origin}/receipt/${log.txHash}`,
+      ts: Number(log.timestamp) * 1000,
+    }))
   }, [logs])
 
   function formatDate(ts) {
@@ -92,7 +70,7 @@ export default function ReportsPage() {
         {error && <div style={{ color: 'crimson', marginTop: 10 }}>{error}</div>}
         {!error && (
           <div className="subtle" style={{ marginTop: 10 }}>
-            Showing recent on-chain events from a rolling block window to stay within the Alchemy free-tier log limit.
+            Loaded through the app server to avoid browser-side RPC failures and rate-limit spikes.
           </div>
         )}
 
@@ -127,9 +105,7 @@ export default function ReportsPage() {
 
         <div style={{ marginTop: 12 }}>
           <h4>Latest events</h4>
-
           {!latest.length && <div>No data</div>}
-
           {!!latest.length && (
             <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
               {latest.map((item) => (
@@ -146,7 +122,6 @@ export default function ReportsPage() {
                       <a href={item.receiptUrl}>{item.txHash}</a>
                     </div>
                   </div>
-
                   <a href={item.receiptUrl} title="Open receipt" style={{ marginLeft: 'auto', width: 96, height: 96 }}>
                     <QRCode value={item.receiptUrl} size={96} />
                   </a>

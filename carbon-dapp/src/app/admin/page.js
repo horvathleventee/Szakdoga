@@ -1,31 +1,20 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import QRCode from 'react-qr-code'
-import { parseAbiItem } from 'viem'
 import {
   useAccount,
-  usePublicClient,
   useReadContract,
   useWaitForTransactionReceipt,
   useWatchContractEvent,
   useWriteContract,
 } from 'wagmi'
 import { cacRegistryAbi } from '../../abi/CacRegistry'
-import { getLogsInChunks } from '../../lib/getLogsInChunks'
 
 const REG = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS
-const CAC = process.env.NEXT_PUBLIC_ALLOWANCE20_ADDRESS
 const GATEWAY =
   (typeof process !== 'undefined' && (process.env.PINATA_GATEWAY || process.env.NEXT_PUBLIC_PINATA_GATEWAY)) ||
   'https://gateway.pinata.cloud/ipfs/'
-
-const REGISTERED_EVENT = parseAbiItem(
-  'event Registered(address indexed user, string displayName, bytes32 taxIdHash, string metadataURI)'
-)
-const SURRENDER_LOGGED_EVENT = parseAbiItem(
-  'event SurrenderLogged(address indexed user, uint256 amount, uint16 periodId, uint256 timestamp, string displayName, bytes32 taxIdHash, string metadataURI, string docsURI)'
-)
 
 function resolveIpfs(uri) {
   if (!uri) return ''
@@ -35,8 +24,6 @@ function resolveIpfs(uri) {
 
 export default function AdminPage() {
   const { address, isConnected } = useAccount()
-  const client = usePublicClient()
-
   const { writeContract, isPending, error: txError, data: txHash } = useWriteContract()
   const { isSuccess: txMined } = useWaitForTransactionReceipt({ hash: txHash })
 
@@ -45,7 +32,12 @@ export default function AdminPage() {
     address: REG,
     functionName: 'operator',
   })
+
   const operatorLoaded = Boolean(operatorAddr)
+  const isOperator = useMemo(() => {
+    if (!address || !operatorAddr) return false
+    return address.toLowerCase() === operatorAddr.toLowerCase()
+  }, [address, operatorAddr])
 
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
@@ -55,142 +47,46 @@ export default function AdminPage() {
   const [surrLoading, setSurrLoading] = useState(false)
   const [surrErr, setSurrErr] = useState('')
 
-  const isOperator = useMemo(() => {
-    if (!address || !operatorAddr) return false
-    return address.toLowerCase() === operatorAddr.toLowerCase()
-  }, [address, operatorAddr])
-
-  const fetchMeta = useCallback(async (metadataURI) => {
-    if (!metadataURI) return null
+  async function load() {
     try {
-      const resp = await fetch(resolveIpfs(metadataURI))
-      if (!resp.ok) return null
-      return await resp.json().catch(() => null)
-    } catch {
-      return null
-    }
-  }, [])
-
-  const load = useCallback(async () => {
-    if (!client) return
-
-    setLoading(true)
-    setErr('')
-
-    try {
-      const logs = await getLogsInChunks(client, {
-        address: REG,
-        event: REGISTERED_EVENT,
-        toBlock: 'latest',
-      })
-
-      const users = Array.from(new Set(logs.map((log) => log.args.user.toLowerCase())))
-      if (!users.length) {
-        setRows([])
-        return
-      }
-
-      const profiles = await Promise.all(
-        users.map(async (user) => {
-          try {
-            const res = await client.readContract({
-              abi: cacRegistryAbi,
-              address: REG,
-              functionName: 'profiles',
-              args: [user],
-            })
-            const note = await client.readContract({
-              abi: cacRegistryAbi,
-              address: REG,
-              functionName: 'kycNote',
-              args: [user],
-            })
-            return { user, ok: true, res, note }
-          } catch (error) {
-            return { user, ok: false, error }
-          }
-        })
-      )
-
-      const enriched = await Promise.all(
-        profiles.map(async (profile) => {
-          if (!profile.ok || !profile.res) return { user: profile.user, exists: false }
-
-          const [displayName, taxIdHash, metadataURI, docsURI, kycApproved, exists] = profile.res
-          const metaParsed = await fetchMeta(metadataURI)
-
-          return {
-            user: profile.user,
-            displayName,
-            taxIdHash,
-            metadataURI,
-            docsURI,
-            kycApproved,
-            exists,
-            metaParsed,
-            kycNote: profile.note || '',
-          }
-        })
-      )
-
-      setRows(enriched.filter((row) => row.exists))
+      setLoading(true)
+      setErr('')
+      const response = await fetch('/api/admin/registrations', { cache: 'no-store' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data?.error || 'Failed to load registrations')
+      setRows(data.rows || [])
     } catch (error) {
       setErr(error?.message || String(error))
     } finally {
       setLoading(false)
     }
-  }, [client, fetchMeta])
+  }
 
-  const loadSurrenders = useCallback(async () => {
-    if (!client) return
-
-    setSurrLoading(true)
-    setSurrErr('')
-
+  async function loadSurrenders() {
     try {
-      const logs = await getLogsInChunks(client, {
-        address: CAC,
-        event: SURRENDER_LOGGED_EVENT,
-        toBlock: 'latest',
-      })
-
-      const origin = typeof window !== 'undefined' ? window.location.origin : ''
-      const nextRows = logs
-        .map((log, index) => {
-          const txHash = log.transactionHash
-          const url = `/receipt/${txHash}`
-          return {
-            key: `${log.blockHash}:${index}`,
-            txHash,
-            user: String(log.args.user),
-            amount: String(log.args.amount),
-            periodId: String(log.args.periodId),
-            timestamp: Number(log.args.timestamp),
-            displayName: log.args.displayName,
-            url,
-            payload: origin ? `${origin}${url}` : url,
-          }
-        })
-        .reverse()
-
-      setSurrLogs(nextRows)
+      setSurrLoading(true)
+      setSurrErr('')
+      const response = await fetch('/api/admin/surrenders', { cache: 'no-store' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data?.error || 'Failed to load surrender events')
+      setSurrLogs(data.rows || [])
     } catch (error) {
       setSurrErr(error?.message || String(error))
     } finally {
       setSurrLoading(false)
     }
-  }, [client])
+  }
 
   useEffect(() => {
-    if (client && isOperator) {
+    if (isOperator) {
       load()
       loadSurrenders()
     }
-  }, [client, isOperator, load, loadSurrenders])
+  }, [isOperator])
 
   useEffect(() => {
     if (txMined) load()
-  }, [txMined, load])
+  }, [txMined])
 
   useWatchContractEvent({
     abi: cacRegistryAbi,
@@ -203,12 +99,6 @@ export default function AdminPage() {
     address: REG,
     eventName: 'KycDecision',
     onLogs: () => load(),
-  })
-  useWatchContractEvent({
-    abi: [SURRENDER_LOGGED_EVENT],
-    address: CAC,
-    eventName: 'SurrenderLogged',
-    onLogs: () => loadSurrenders(),
   })
 
   function approve(user) {
@@ -223,7 +113,6 @@ export default function AdminPage() {
   function rejectWithReason(user) {
     const reason = window.prompt('Add a short rejection reason:')
     if (!reason) return
-
     writeContract({
       abi: cacRegistryAbi,
       address: REG,
@@ -233,9 +122,7 @@ export default function AdminPage() {
   }
 
   if (!isConnected) return <div className="card">Please connect your wallet.</div>
-
   if (!operatorLoaded) return <div className="card">Loading operator permissions...</div>
-
   if (!isOperator) {
     return (
       <div className="card">
@@ -267,12 +154,6 @@ export default function AdminPage() {
           {err && <span style={{ color: 'crimson' }}>{err}</span>}
         </div>
 
-        {!err && (
-          <div className="subtle" style={{ marginTop: 10 }}>
-            Showing recent registration events from a rolling block window to fit the Alchemy free-tier log limit.
-          </div>
-        )}
-
         {!rows.length ? (
           <div style={{ marginTop: 12 }}>No registrations found.</div>
         ) : (
@@ -303,20 +184,17 @@ export default function AdminPage() {
                       <span style={{ color: '#eab308' }}>missing</span>
                     )}
                   </div>
-
                   <div style={{ marginTop: 6 }}>
                     <b>KYC state:</b>{' '}
                     <span className={`badge ${row.kycApproved ? 'ok' : 'warn'}`}>
                       {row.kycApproved ? 'APPROVED' : 'PENDING/REJECTED'}
                     </span>
                   </div>
-
                   {!row.kycApproved && row.kycNote && (
                     <div style={{ marginTop: 4, color: '#b45309' }}>
                       <b>Reject note:</b> {row.kycNote}
                     </div>
                   )}
-
                   <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                     {!row.kycApproved && (
                       <button className="btn" disabled={isPending} onClick={() => approve(row.user)}>
@@ -341,16 +219,8 @@ export default function AdminPage() {
             {surrLoading ? 'Loading...' : 'Refresh'}
           </button>
         </div>
-
         {surrErr && <div style={{ color: 'crimson', marginTop: 10 }}>{surrErr}</div>}
-        {!surrErr && (
-          <div className="subtle" style={{ marginTop: 8 }}>
-            Showing recent surrender events from a rolling block window to fit the Alchemy free-tier log limit.
-          </div>
-        )}
-
         <div className="subtle" style={{ marginTop: 8 }}>Total events: {surrLogs.length}</div>
-
         {!surrLogs.length ? (
           <div style={{ marginTop: 12 }}>No surrender events.</div>
         ) : (
@@ -369,12 +239,11 @@ export default function AdminPage() {
                     <b>When:</b> {new Date(item.timestamp * 1000).toISOString()}
                   </div>
                   <div className="subtle" style={{ marginTop: 2, overflowWrap: 'anywhere' }}>
-                    <b>Tx:</b> <a href={item.url}>{item.txHash}</a>
+                    <b>Tx:</b> <a href={`/receipt/${item.txHash}`}>{item.txHash}</a>
                   </div>
                 </div>
-
-                <a href={item.url} title="Open receipt" style={{ display: 'block', width: 110, height: 110 }}>
-                  <QRCode value={item.payload} size={110} />
+                <a href={`/receipt/${item.txHash}`} title="Open receipt" style={{ display: 'block', width: 110, height: 110 }}>
+                  <QRCode value={typeof window !== 'undefined' ? `${window.location.origin}/receipt/${item.txHash}` : `/receipt/${item.txHash}`} size={110} />
                 </a>
               </div>
             ))}
