@@ -5,24 +5,24 @@ import { usePathname } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 const topItems = [
-  { href: '/', label: 'Dashboard', icon: 'Home' },
-  { href: '/profile', label: 'Company Profile', icon: 'Profile' },
+  { href: '/', label: 'Dashboard', icon: 'DB' },
+  { href: '/profile', label: 'Company Profile', icon: 'PF' },
 ]
 
 const marketItems = [
-  { href: '/marketplace/sell-fixed', label: 'Fixed price', icon: 'Fixed' },
-  { href: '/marketplace/open-auction', label: 'Open auction', icon: 'Open' },
-  { href: '/marketplace/buy-orders', label: 'Buy requests', icon: 'Buy' },
-  { href: '/marketplace/blind-auction', label: 'Blind auction', icon: 'Blind' },
-  { href: '/marketplace/dutch', label: 'Dutch auction', icon: 'Dutch' },
-  { href: '/marketplace/bundle', label: 'Bundle / Batch', icon: 'Bundle' },
-  { href: '/marketplace/offers', label: 'Direct offers', icon: 'Offer' },
+  { href: '/marketplace/sell-fixed', label: 'Fixed price', icon: 'FX' },
+  { href: '/marketplace/open-auction', label: 'Open auction', icon: 'OA' },
+  { href: '/marketplace/buy-orders', label: 'Buy requests', icon: 'BO' },
+  { href: '/marketplace/blind-auction', label: 'Blind auction', icon: 'BA' },
+  { href: '/marketplace/dutch', label: 'Dutch auction', icon: 'DA' },
+  { href: '/marketplace/bundle', label: 'Bundle / Batch', icon: 'BD' },
+  { href: '/marketplace/offers', label: 'Direct offers', icon: 'OF' },
 ]
 
 const bottomItems = [
-  { href: '/mint', label: 'Mint', icon: 'Mint' },
-  { href: '/reports', label: 'Reports', icon: 'Report' },
-  { href: '/settings', label: 'Settings', icon: 'Settings' },
+  { href: '/mint', label: 'Mint', icon: 'MT' },
+  { href: '/reports', label: 'Reports', icon: 'RP' },
+  { href: '/settings', label: 'Settings', icon: 'ST' },
 ]
 
 export default function Sidebar() {
@@ -38,17 +38,24 @@ export default function Sidebar() {
     <aside className="sidebar">
       <div className="brand">
         <div className="fox" />
-        <div>CAC Registry & Marketplace</div>
+        <div>
+          <div>CAC Registry &</div>
+          <div>Marketplace</div>
+        </div>
       </div>
 
+      <div className="sidebar-kicker">Sepolia demo console</div>
+
       <nav className="nav">
-        {topItems.map((it) => (
-          <Link key={it.href} href={it.href} className={linkClass(it.href)}>
-            <span className="nav-ico">{it.icon}</span>
-            <span className="nav-label">{it.label}</span>
+        <div className="nav-section">Overview</div>
+        {topItems.map((item) => (
+          <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+            <span className="nav-ico">{item.icon}</span>
+            <span className="nav-label">{item.label}</span>
           </Link>
         ))}
 
+        <div className="nav-section">Marketplace</div>
         <div className={`nav-group ${marketActive}`}>
           <button
             type="button"
@@ -56,7 +63,7 @@ export default function Sidebar() {
             onClick={() => setMarketOpen((value) => !value)}
             aria-expanded={showMarketItems}
           >
-            <span className="nav-ico">Shop</span>
+            <span className="nav-ico">MK</span>
             <span className="nav-label">Marketplace</span>
             <span className={`nav-caret ${showMarketItems ? 'open' : ''}`} aria-hidden>
               ^
@@ -65,26 +72,28 @@ export default function Sidebar() {
 
           {showMarketItems && (
             <div className="nav-sub">
-              {marketItems.map((it) => (
-                <Link key={it.href} href={it.href} className={`sub-link ${linkClass(it.href)}`}>
-                  <span className="nav-ico">{it.icon}</span>
-                  <span className="nav-label">{it.label}</span>
+              {marketItems.map((item) => (
+                <Link key={item.href} href={item.href} className={`sub-link ${linkClass(item.href)}`}>
+                  <span className="nav-ico">{item.icon}</span>
+                  <span className="nav-label">{item.label}</span>
                 </Link>
               ))}
             </div>
           )}
         </div>
 
-        {bottomItems.map((it) => (
-          <Link key={it.href} href={it.href} className={linkClass(it.href)}>
-            <span className="nav-ico">{it.icon}</span>
-            <span className="nav-label">{it.label}</span>
+        <div className="nav-section">Tools</div>
+        {bottomItems.map((item) => (
+          <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+            <span className="nav-ico">{item.icon}</span>
+            <span className="nav-label">{item.label}</span>
           </Link>
         ))}
       </nav>
 
-      <div style={{ marginTop: 'auto', padding: '12px', color: 'var(--muted)', fontSize: 12 }}>
-        v0.1 | Configurable network
+      <div className="sidebar-footer">
+        <div>v0.1</div>
+        <div>Sepolia live</div>
       </div>
     </aside>
   )

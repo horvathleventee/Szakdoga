@@ -138,8 +138,7 @@ async function main() {
   console.log("Deployer:", deployer.address);
 
   // 1) Registry
-  const OPERATOR =
-    process.env.OPERATOR || "0x8626f6940e2eb28930efb4cef49b2d1f2c9c1199";
+  const OPERATOR = process.env.OPERATOR || deployer.address;
   const Reg = await ethers.getContractFactory("CacRegistry");
   const reg = await Reg.deploy(OPERATOR);
   await reg.waitForDeployment();
@@ -236,8 +235,8 @@ async function main() {
   const dappDir = firstExisting(DAPP_CANDIDATES);
 
   const dappEnvUpdates = {
-    NEXT_PUBLIC_RPC_URL: "http://127.0.0.1:8545",
-    NEXT_PUBLIC_CHAIN_ID: "31337",
+    NEXT_PUBLIC_RPC_URL: network.name === "sepolia" ? (process.env.SEPOLIA_RPC_URL || "") : "http://127.0.0.1:8545",
+    NEXT_PUBLIC_CHAIN_ID: network.name === "sepolia" ? "11155111" : "31337",
     NEXT_PUBLIC_ALLOWANCE20_ADDRESS: cacAddr,
     NEXT_PUBLIC_REGISTRY_ADDRESS: regAddr,
 
@@ -269,7 +268,7 @@ async function main() {
   const qcDir = firstExisting(QC_CANDIDATES);
 
   const qcUpdates = {
-    RPC_URL: "http://127.0.0.1:8545",
+    RPC_URL: network.name === "sepolia" ? (process.env.SEPOLIA_RPC_URL || "") : "http://127.0.0.1:8545",
     CAC_ADDRESS: cacAddr,
     FACTOR_PER_M2: "0.05",
     SERVER_PK: serverPk || "",
