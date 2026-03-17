@@ -10,6 +10,7 @@
     "deploy:all:local": "hardhat run scripts/deploy_all.js --network localhost",
     "deploy:all:sepolia": "hardhat run scripts/deploy_all.js --network sepolia",
     "deploy:8546": "hardhat run scripts/deploy.js --network local8546",
+    "grant:quota:sepolia": "hardhat run scripts/grant_quota_role.js --network sepolia",
     "mint:local": "hardhat run scripts/mint.js --network localhost",
     "mint:8546": "hardhat run scripts/mint.js --network local8546",
     "test": "hardhat test",
