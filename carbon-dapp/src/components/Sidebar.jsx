@@ -2,35 +2,34 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 const topItems = [
-  { href: '/', label: 'Dashboard', icon: '🏠' },
-  { href: '/profile', label: 'Company Profile', icon: '🏷️' },
+  { href: '/', label: 'Dashboard', icon: 'Home' },
+  { href: '/profile', label: 'Company Profile', icon: 'Profile' },
 ]
 
 const marketItems = [
-  { href: '/marketplace/sell', label: 'Sell', icon: '💸' },
-  { href: '/marketplace/buy', label: 'Buy requests', icon: '🧾' },
-  { href: '/marketplace/blind', label: 'Blind auctions', icon: '🙈' },
+  { href: '/marketplace/sell-fixed', label: 'Fixed price', icon: 'Fixed' },
+  { href: '/marketplace/open-auction', label: 'Open auction', icon: 'Open' },
+  { href: '/marketplace/buy-orders', label: 'Buy requests', icon: 'Buy' },
+  { href: '/marketplace/blind-auction', label: 'Blind auction', icon: 'Blind' },
+  { href: '/marketplace/dutch', label: 'Dutch auction', icon: 'Dutch' },
+  { href: '/marketplace/bundle', label: 'Bundle / Batch', icon: 'Bundle' },
+  { href: '/marketplace/offers', label: 'Direct offers', icon: 'Offer' },
 ]
 
 const bottomItems = [
-  { href: '/reports', label: 'Reports', icon: '📊' },
-  { href: '/mint', label: 'Mint', icon: '🏭' },
-  { href: '/settings', label: 'Settings', icon: '⚙️' },
+  { href: '/mint', label: 'Mint', icon: 'Mint' },
+  { href: '/reports', label: 'Reports', icon: 'Report' },
+  { href: '/settings', label: 'Settings', icon: 'Settings' },
 ]
 
 export default function Sidebar() {
   const path = usePathname()
-
   const isMarketPath = useMemo(() => (path || '').startsWith('/marketplace'), [path])
-  const [marketOpen, setMarketOpen] = useState(isMarketPath)
-
-  useEffect(() => {
-    // Ha marketplace aloldalon vagyunk, legyen nyitva
-    if (isMarketPath) setMarketOpen(true)
-  }, [isMarketPath])
+  const [marketOpen, setMarketOpen] = useState(() => isMarketPath)
+  const showMarketItems = isMarketPath || marketOpen
 
   const linkClass = (href) => ((path || '') === href ? 'active' : '')
   const marketActive = isMarketPath ? 'active' : ''
@@ -43,7 +42,6 @@ export default function Sidebar() {
       </div>
 
       <nav className="nav">
-        {/* Top items */}
         {topItems.map((it) => (
           <Link key={it.href} href={it.href} className={linkClass(it.href)}>
             <span className="nav-ico">{it.icon}</span>
@@ -51,22 +49,21 @@ export default function Sidebar() {
           </Link>
         ))}
 
-        {/* Marketplace group (NEM navigál, csak lenyit/csuk) */}
         <div className={`nav-group ${marketActive}`}>
           <button
             type="button"
             className="nav-btn"
-            onClick={() => setMarketOpen((v) => !v)}
-            aria-expanded={marketOpen}
+            onClick={() => setMarketOpen((value) => !value)}
+            aria-expanded={showMarketItems}
           >
-            <span className="nav-ico">🛒</span>
+            <span className="nav-ico">Shop</span>
             <span className="nav-label">Marketplace</span>
-            <span className={`nav-caret ${marketOpen ? 'open' : ''}`} aria-hidden>
-              ▾
+            <span className={`nav-caret ${showMarketItems ? 'open' : ''}`} aria-hidden>
+              ^
             </span>
           </button>
 
-          {marketOpen && (
+          {showMarketItems && (
             <div className="nav-sub">
               {marketItems.map((it) => (
                 <Link key={it.href} href={it.href} className={`sub-link ${linkClass(it.href)}`}>
@@ -78,7 +75,6 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Bottom items */}
         {bottomItems.map((it) => (
           <Link key={it.href} href={it.href} className={linkClass(it.href)}>
             <span className="nav-ico">{it.icon}</span>
@@ -88,7 +84,7 @@ export default function Sidebar() {
       </nav>
 
       <div style={{ marginTop: 'auto', padding: '12px', color: 'var(--muted)', fontSize: 12 }}>
-        v0.1 • Local 31337
+        v0.1 | Configurable network
       </div>
     </aside>
   )

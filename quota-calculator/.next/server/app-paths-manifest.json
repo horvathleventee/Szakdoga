@@ -1,5 +1,1 @@
-{
-  "/page": "app/page.js",
-  "/api/get-quota/route": "app/api/get-quota/route.js",
-  "/api/set-quota/route": "app/api/set-quota/route.js"
-}
+{}

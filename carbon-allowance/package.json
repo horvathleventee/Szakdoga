@@ -7,6 +7,8 @@
     "compile": "hardhat compile",
     "node": "hardhat node",
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:all:local": "hardhat run scripts/deploy_all.js --network localhost",
+    "deploy:all:sepolia": "hardhat run scripts/deploy_all.js --network sepolia",
     "deploy:8546": "hardhat run scripts/deploy.js --network local8546",
     "mint:local": "hardhat run scripts/mint.js --network localhost",
     "mint:8546": "hardhat run scripts/mint.js --network local8546",

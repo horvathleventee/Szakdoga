@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { usePublicClient } from 'wagmi'
 import { parseAbiItem } from 'viem'
 import {
@@ -102,7 +102,7 @@ export default function ReportsChartLite({ marketAddress }) {
   // első betöltés
   useEffect(() => {
     load()
-  }, [client, marketAddress])
+  }, [client, marketAddress]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasData = rows.length > 0
 

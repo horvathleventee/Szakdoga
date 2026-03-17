@@ -60,3 +60,15 @@ curl --url https://mainnet.infura.io/v3/fbbfb658f0584c5f8157d6c4454ffab0 \
 
 
 
+
+
+
+
+
+
+
+megbeszélés:
+- gas price-t admin fizesse az megoldható-e valahogy, szoktak-e ilyet vagy valami, hogy pl ő írja alá de díjat nem fizet.
+- admin kapna valami részesedést valahogy
+- 721-re csere akár vagy mik a lehetőségek, hogy honnan van az eredete. vagy 1155 praktikus-e vagy sem utána nézni?
+

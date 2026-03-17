@@ -3,11 +3,11 @@ const fs = require('fs');
 const path = require('path');
 
 function writeEnv(cac, reg, mkt) {
-  const p = path.join(__dirname, '..', 'carbon-dapp', '.env.local');
+  const p = path.join(__dirname, '..', '..', 'carbon-dapp', '.env.local');
   const lines = [
     `NEXT_PUBLIC_ALLOWANCE20_ADDRESS=${cac}`,
     `NEXT_PUBLIC_REGISTRY_ADDRESS=${reg}`,
-    `NEXT_PUBLIC_MARKET_ADDRESS=${mkt}`,
+    `NEXT_PUBLIC_MARKET_FIXED_ADDRESS=${mkt}`,
     ''
   ];
   fs.writeFileSync(p, lines.join('\n'));

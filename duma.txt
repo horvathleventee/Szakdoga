@@ -10,3 +10,8 @@ nosql, relációs adatbázis, elmenteni az eseményeket.
 Weboldal ahol statisztikákat számolna.
 Kifele menő api, le lehessen kérdezni dolgokat. Kellene egy példa amit valóban meg is kellene csinálni. Megcsinálni a karakteres oldalt ahol van a két karakter és ezeket ruházni. Vagy csak kitűző-
 ha nem fér bele az időben.
+
+- adatbázis nosql vagy sql melyik a praktikusabb és írni róla picit.
+- bemenő apikat definiálni (útvonal kereső) dummy oldalt 
+- alap szintű statisztikai oldal
+- angolul kommunikálni a phd-s csajjal mert ő a statisztikás

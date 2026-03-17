@@ -34,7 +34,7 @@ export default function ReportsPage() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Összesítés év szerint
   const totalsByYear = useMemo(() => {

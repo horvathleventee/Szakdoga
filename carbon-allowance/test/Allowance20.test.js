@@ -5,9 +5,16 @@ const { ethers } = require("hardhat");
 describe("Allowance20", () => {
   it("mint + surrender works", async () => {
     const [admin, factory] = await ethers.getSigners();
+    const Registry = await ethers.getContractFactory("CacRegistry");
+    const registry = await Registry.deploy(admin.address);
+    await registry.waitForDeployment();
+
     const F = await ethers.getContractFactory("Allowance20");
-    const token = await F.deploy();
+    const token = await F.deploy(await registry.getAddress());
     await token.waitForDeployment();
+
+    await registry.connect(factory).register(ethers.ZeroHash, "ipfs://meta", "Factory");
+    await registry.connect(admin).approveKyc(factory.address, true);
 
     await token.connect(admin).mint(factory.address, 1000);
     expect(await token.balanceOf(factory.address)).to.equal(1000n);

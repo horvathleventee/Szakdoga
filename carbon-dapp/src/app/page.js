@@ -14,105 +14,79 @@ import { injected } from 'wagmi/connectors'
 
 import { allowance20Abi } from '../abi/Allowance20'
 import { cacRegistryAbi } from '../abi/CacRegistry'
-import { marketV2Abi } from '../abi/CacMarketplaceV2'
 
+// ✅ 7 market ABI-k
+import { fixedMarketAbi } from '../abi/FixedMarket'
+import { openAuctionMarketAbi } from '../abi/OpenAuctionMarket'
+import { buyOrderMarketAbi } from '../abi/BuyOrderMarket'
+import { blindAuctionMarketAbi } from '../abi/BlindAuctionMarket'
+import { dutchAuctionMarketAbi } from '../abi/DutchAuctionMarket'
+import { bundleSaleMarketAbi } from '../abi/BundleSaleMarket'
+import { directOfferMarketAbi } from '../abi/DirectOfferMarket'
+
+// ENV
 const CAC = process.env.NEXT_PUBLIC_ALLOWANCE20_ADDRESS
 const REG = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS
-const MKT2 = process.env.NEXT_PUBLIC_MARKET_V2_ADDRESS
+const FIXED = process.env.NEXT_PUBLIC_MARKET_FIXED_ADDRESS
+const OPENA = process.env.NEXT_PUBLIC_MARKET_OPEN_AUCTION_ADDRESS
+const BUY = process.env.NEXT_PUBLIC_MARKET_BUY_ORDER_ADDRESS
+const BLIND = process.env.NEXT_PUBLIC_MARKET_BLIND_AUCTION_ADDRESS
+const DUTCH = process.env.NEXT_PUBLIC_MARKET_DUTCH_ADDRESS
+const BUNDLE = process.env.NEXT_PUBLIC_MARKET_BUNDLE_ADDRESS
+const OFFER = process.env.NEXT_PUBLIC_MARKET_OFFER_ADDRESS
 
-const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 const isHexAddress = (x) => typeof x === 'string' && /^0x[0-9a-fA-F]{40}$/.test(x)
 
 function nowSec() {
   return Math.floor(Date.now() / 1000)
 }
-
 function short(addr) {
   return addr ? addr.slice(0, 6) + '…' + addr.slice(-4) : ''
 }
 
-function normalizeListing(x) {
-  // [id, seller, amountCAC, saleType, status, priceWei, reserveWei, buyoutWei, endTime, highestBidder, highestBid]
-  if (Array.isArray(x)) {
-    return {
-      id: Number(x[0] ?? 0),
-      seller: String(x[1]),
-      amountCAC: x[2],
-      saleType: x[3],
-      status: x[4],
-      priceWei: x[5],
-      reserveWei: x[6],
-      buyoutWei: x[7],
-      endTime: x[8],
-      highestBidder: x[9],
-      highestBid: x[10],
-    }
-  }
-  return {
-    id: Number(x?.id ?? 0),
-    seller: String(x?.seller),
-    amountCAC: x?.amountCAC,
-    saleType: x?.saleType,
-    status: x?.status,
-    priceWei: x?.priceWei,
-    reserveWei: x?.reserveWei,
-    buyoutWei: x?.buyoutWei,
-    endTime: x?.endTime,
-    highestBidder: x?.highestBidder,
-    highestBid: x?.highestBid,
-  }
+// ----------------- normalizers -----------------
+
+function normFixed(x) {
+  // listings: [id, seller, amountCAC, priceWei, status]
+  if (Array.isArray(x)) return { id: Number(x[0]), status: Number(x[4]) }
+  return { id: Number(x?.id ?? 0), status: Number(x?.status ?? 0) }
 }
 
-function normalizeBuyOrder(x) {
-  // [id, buyer, amountCAC, offerWei, status]
-  if (Array.isArray(x)) {
-    return {
-      id: Number(x[0] ?? 0),
-      buyer: String(x[1]),
-      amountCAC: x[2],
-      offerWei: x[3],
-      status: x[4],
-    }
-  }
-  return {
-    id: Number(x?.id ?? 0),
-    buyer: String(x?.buyer),
-    amountCAC: x?.amountCAC,
-    offerWei: x?.offerWei,
-    status: x?.status,
-  }
+function normOpenAuction(x) {
+  // auctions: [id, seller, amountCAC, reserveWei, buyoutWei, endTime, status, highestBidder, highestBid]
+  if (Array.isArray(x)) return { id: Number(x[0]), endTime: Number(x[5]), status: Number(x[6]) }
+  return { id: Number(x?.id ?? 0), endTime: Number(x?.endTime ?? 0), status: Number(x?.status ?? 0) }
 }
 
-function normalizeBlind(x) {
-  // [id, seller, amountCAC, reserveWei, buyoutWei, commitEndTime, revealEndTime, status, highestBidder, highestBid, commitCount]
-  if (Array.isArray(x)) {
-    return {
-      id: Number(x[0] ?? 0),
-      seller: String(x[1]),
-      amountCAC: x[2],
-      reserveWei: x[3],
-      buyoutWei: x[4],
-      commitEndTime: x[5],
-      revealEndTime: x[6],
-      status: x[7],
-      highestBidder: x[8],
-      highestBid: x[9],
-      commitCount: x[10],
-    }
-  }
-  return {
-    id: Number(x?.id ?? 0),
-    seller: String(x?.seller),
-    amountCAC: x?.amountCAC,
-    reserveWei: x?.reserveWei,
-    buyoutWei: x?.buyoutWei,
-    commitEndTime: x?.commitEndTime,
-    revealEndTime: x?.revealEndTime,
-    status: x?.status,
-    highestBidder: x?.highestBidder,
-    highestBid: x?.highestBid,
-    commitCount: x?.commitCount,
-  }
+function normBuyOrder(x) {
+  // orders: [id, buyer, amountCAC, offerWei, status]
+  if (Array.isArray(x)) return { id: Number(x[0]), status: Number(x[4]) }
+  return { id: Number(x?.id ?? 0), status: Number(x?.status ?? 0) }
+}
+
+function normBlind(x) {
+  // auctions: [id, seller, amountCAC, reserveWei, buyoutWei, commitEndTime, revealEndTime, status, ...]
+  if (Array.isArray(x)) return { id: Number(x[0]), status: Number(x[7]) }
+  return { id: Number(x?.id ?? 0), status: Number(x?.status ?? 0) }
+}
+
+function normDutch(x) {
+  // ✅ NEW dutch struct:
+  // [id, seller, amountCAC, startPriceWei, endPriceWei, startTime, endTime, stepSec, status]
+  if (Array.isArray(x)) return { id: Number(x[0]), endTime: Number(x[6]), status: Number(x[8]) }
+  return { id: Number(x?.id ?? 0), endTime: Number(x?.endTime ?? 0), status: Number(x?.status ?? 0) }
+}
+
+function normBundleFromGetBundle(x) {
+  // ✅ Tieres bundle: getBundle(id) -> (id, seller, totalCAC, remainingCAC, tierCount, status)
+  if (Array.isArray(x)) return { id: Number(x[0]), status: Number(x[5]) }
+  return { id: Number(x?.id ?? 0), status: Number(x?.status ?? 0) }
+}
+
+function normOffer(x) {
+  // offers: last field is status
+  if (Array.isArray(x)) return { id: Number(x[0]), status: Number(x[x.length - 1]) }
+  return { id: Number(x?.id ?? 0), status: Number(x?.status ?? 0) }
 }
 
 export default function Dashboard() {
@@ -127,7 +101,14 @@ export default function Dashboard() {
 
   const validCAC = isHexAddress(CAC)
   const validREG = isHexAddress(REG)
-  const validMKT = isHexAddress(MKT2)
+
+  const validFIXED = isHexAddress(FIXED)
+  const validOPENA = isHexAddress(OPENA)
+  const validBUY = isHexAddress(BUY)
+  const validBLIND = isHexAddress(BLIND)
+  const validDUTCH = isHexAddress(DUTCH)
+  const validBUNDLE = isHexAddress(BUNDLE)
+  const validOFFER = isHexAddress(OFFER)
 
   const busy = !mounted || connectStatus !== 'idle' || accountStatus === 'reconnecting'
 
@@ -136,6 +117,9 @@ export default function Dashboard() {
     const inj = connectors.find((c) => c.id === 'injected' || c.type === 'injected') || injected()
     connect({ connector: inj })
   }
+
+  // ✅ ONE writeContract only (don’t duplicate)
+  const { writeContract, isPending: isTxPending, error: txError, data: txHash } = useWriteContract()
 
   // CAC balance
   const { data: balance, refetch: refetchBal } = useReadContract({
@@ -146,7 +130,7 @@ export default function Dashboard() {
     query: { enabled: mounted && !!address && validCAC },
   })
 
-  // Quota (remainingQuota)
+  // Quota
   const { data: quota, refetch: refetchQuota } = useReadContract({
     abi: allowance20Abi,
     address: validCAC ? CAC : undefined,
@@ -155,7 +139,7 @@ export default function Dashboard() {
     query: { enabled: mounted && !!address && validCAC },
   })
 
-  // KYC status (profiles -> [4] = kycApproved)
+  // KYC status
   const { data: myProfile, refetch: refetchProfile } = useReadContract({
     abi: cacRegistryAbi,
     address: validREG ? REG : undefined,
@@ -165,124 +149,195 @@ export default function Dashboard() {
   })
   const isApproved = myProfile ? Boolean(myProfile[4]) : false
 
-  // ---- Marketplace overview (V2) ----
-  const { data: nextId, refetch: refetchNextId } = useReadContract({
-    abi: marketV2Abi,
-    address: validMKT ? MKT2 : undefined,
+  // ---------------- MARKET COUNTERS ----------------
+
+  // Fixed
+  const { data: fixedNextId, refetch: refetchFixedNextId } = useReadContract({
+    abi: fixedMarketAbi,
+    address: validFIXED ? FIXED : undefined,
     functionName: 'nextId',
-    query: { enabled: validMKT },
+    query: { enabled: validFIXED },
   })
-
-  const sellIds = useMemo(() => {
-    const n = nextId ? Number(nextId) : 0
+  const fixedIds = useMemo(() => {
+    const n = fixedNextId ? Number(fixedNextId) : 0
     return n > 0 ? Array.from({ length: n }, (_, i) => i) : []
-  }, [nextId])
-
-  const { data: sellData, refetch: refetchSell } = useReadContracts({
-    contracts: sellIds.map((id) => ({
-      abi: marketV2Abi,
-      address: MKT2,
-      functionName: 'getListing',
+  }, [fixedNextId])
+  const { data: fixedRows, refetch: refetchFixedRows } = useReadContracts({
+    contracts: fixedIds.map((id) => ({
+      abi: fixedMarketAbi,
+      address: FIXED,
+      functionName: 'listings',
       args: [BigInt(id)],
     })),
-    query: { enabled: validMKT && sellIds.length > 0 },
+    query: { enabled: validFIXED && fixedIds.length > 0 },
   })
+  const activeFixedCount = useMemo(() => {
+    if (!fixedRows) return 0
+    return fixedRows.map((r) => (r?.result ? normFixed(r.result) : null)).filter(Boolean).filter((x) => x.status === 0).length
+  }, [fixedRows])
 
-  const sellRows = useMemo(() => {
-    if (!sellData) return []
-    return sellData.map((r) => (r?.result ? normalizeListing(r.result) : null)).filter(Boolean)
-  }, [sellData])
-
-  const activeSellCount = useMemo(() => {
+  // Open auction
+  const { data: openNextId, refetch: refetchOpenNextId } = useReadContract({
+    abi: openAuctionMarketAbi,
+    address: validOPENA ? OPENA : undefined,
+    functionName: 'nextId',
+    query: { enabled: validOPENA },
+  })
+  const openIds = useMemo(() => {
+    const n = openNextId ? Number(openNextId) : 0
+    return n > 0 ? Array.from({ length: n }, (_, i) => i) : []
+  }, [openNextId])
+  const { data: openRows, refetch: refetchOpenRows } = useReadContracts({
+    contracts: openIds.map((id) => ({
+      abi: openAuctionMarketAbi,
+      address: OPENA,
+      functionName: 'auctions',
+      args: [BigInt(id)],
+    })),
+    query: { enabled: validOPENA && openIds.length > 0 },
+  })
+  const activeOpenCount = useMemo(() => {
+    if (!openRows) return 0
     const now = nowSec()
-    return sellRows.filter((r) => {
-      if (Number(r.status) !== 0) return false
-      if (Number(r.saleType) === 0) return true
-      return Number(r.endTime) > now
-    }).length
-  }, [sellRows])
+    return openRows
+      .map((r) => (r?.result ? normOpenAuction(r.result) : null))
+      .filter(Boolean)
+      .filter((x) => x.status === 0 && (!x.endTime || x.endTime > now)).length
+  }, [openRows])
 
-  const { data: nextBuyId, refetch: refetchNextBuyId } = useReadContract({
-    abi: marketV2Abi,
-    address: validMKT ? MKT2 : undefined,
-    functionName: 'nextBuyId',
-    query: { enabled: validMKT },
+  // Buy order
+  const { data: buyNextId, refetch: refetchBuyNextId } = useReadContract({
+    abi: buyOrderMarketAbi,
+    address: validBUY ? BUY : undefined,
+    functionName: 'nextId',
+    query: { enabled: validBUY },
   })
-
   const buyIds = useMemo(() => {
-    const n = nextBuyId ? Number(nextBuyId) : 0
+    const n = buyNextId ? Number(buyNextId) : 0
     return n > 0 ? Array.from({ length: n }, (_, i) => i) : []
-  }, [nextBuyId])
-
-  const { data: buyData, refetch: refetchBuy } = useReadContracts({
+  }, [buyNextId])
+  const { data: buyRows, refetch: refetchBuyRows } = useReadContracts({
     contracts: buyIds.map((id) => ({
-      abi: marketV2Abi,
-      address: MKT2,
-      functionName: 'getBuyOrder',
+      abi: buyOrderMarketAbi,
+      address: BUY,
+      functionName: 'orders',
       args: [BigInt(id)],
     })),
-    query: { enabled: validMKT && buyIds.length > 0 },
+    query: { enabled: validBUY && buyIds.length > 0 },
   })
+  const activeBuyCount = useMemo(() => {
+    if (!buyRows) return 0
+    return buyRows.map((r) => (r?.result ? normBuyOrder(r.result) : null)).filter(Boolean).filter((x) => x.status === 0).length
+  }, [buyRows])
 
-  const buyRows = useMemo(() => {
-    if (!buyData) return []
-    return buyData.map((r) => (r?.result ? normalizeBuyOrder(r.result) : null)).filter(Boolean)
-  }, [buyData])
-
-  const activeBuyCount = useMemo(() => buyRows.filter((o) => Number(o.status) === 0).length, [buyRows])
-
-  const { data: nextBlindId, refetch: refetchNextBlindId } = useReadContract({
-    abi: marketV2Abi,
-    address: validMKT ? MKT2 : undefined,
-    functionName: 'nextBlindId',
-    query: { enabled: validMKT },
+  // Blind auction
+  const { data: blindNextId, refetch: refetchBlindNextId } = useReadContract({
+    abi: blindAuctionMarketAbi,
+    address: validBLIND ? BLIND : undefined,
+    functionName: 'nextId',
+    query: { enabled: validBLIND },
   })
-
   const blindIds = useMemo(() => {
-    const n = nextBlindId ? Number(nextBlindId) : 0
+    const n = blindNextId ? Number(blindNextId) : 0
     return n > 0 ? Array.from({ length: n }, (_, i) => i) : []
-  }, [nextBlindId])
-
-  const { data: blindData, refetch: refetchBlind } = useReadContracts({
+  }, [blindNextId])
+  const { data: blindRows, refetch: refetchBlindRows } = useReadContracts({
     contracts: blindIds.map((id) => ({
-      abi: marketV2Abi,
-      address: MKT2,
-      functionName: 'getBlindAuction',
+      abi: blindAuctionMarketAbi,
+      address: BLIND,
+      functionName: 'auctions',
       args: [BigInt(id)],
     })),
-    query: { enabled: validMKT && blindIds.length > 0 },
+    query: { enabled: validBLIND && blindIds.length > 0 },
   })
+  const activeBlindCount = useMemo(() => {
+    if (!blindRows) return 0
+    return blindRows.map((r) => (r?.result ? normBlind(r.result) : null)).filter(Boolean).filter((x) => x.status === 0).length
+  }, [blindRows])
 
-  const blindRows = useMemo(() => {
-    if (!blindData) return []
-    return blindData.map((r) => (r?.result ? normalizeBlind(r.result) : null)).filter(Boolean)
-  }, [blindData])
-
-  const activeBlindCount = useMemo(() => blindRows.filter((a) => Number(a.status) === 0).length, [blindRows])
-
-  // Refunds
-  const { data: myRefund, refetch: refetchRefund } = useReadContract({
-    abi: marketV2Abi,
-    address: validMKT ? MKT2 : undefined,
-    functionName: 'pendingRefund',
-    args: mounted && address && validMKT ? [address] : undefined,
-    query: { enabled: mounted && !!address && validMKT },
+  // Dutch auction
+  const { data: dutchNextId, refetch: refetchDutchNextId } = useReadContract({
+    abi: dutchAuctionMarketAbi,
+    address: validDUTCH ? DUTCH : undefined,
+    functionName: 'nextId',
+    query: { enabled: validDUTCH },
   })
-  const refundWei = myRefund ?? 0n
-  const canWithdraw = refundWei > 0n
+  const dutchIds = useMemo(() => {
+    const n = dutchNextId ? Number(dutchNextId) : 0
+    return n > 0 ? Array.from({ length: n }, (_, i) => i) : []
+  }, [dutchNextId])
+  const { data: dutchRows, refetch: refetchDutchRows } = useReadContracts({
+    contracts: dutchIds.map((id) => ({
+      abi: dutchAuctionMarketAbi,
+      address: DUTCH,
+      functionName: 'auctions',
+      args: [BigInt(id)],
+    })),
+    query: { enabled: validDUTCH && dutchIds.length > 0 },
+  })
+  const activeDutchCount = useMemo(() => {
+    if (!dutchRows) return 0
+    const now = nowSec()
+    return dutchRows
+      .map((r) => (r?.result ? normDutch(r.result) : null))
+      .filter(Boolean)
+      .filter((x) => x.status === 0 && (!x.endTime || x.endTime > now)).length
+  }, [dutchRows])
 
-  const { writeContract, isPending: isTxPending, error: txError, data: txHash } = useWriteContract()
+  // ✅ Bundle sale (tieres): use getBundle, not bundles()
+  const { data: bundleNextId, refetch: refetchBundleNextId } = useReadContract({
+    abi: bundleSaleMarketAbi,
+    address: validBUNDLE ? BUNDLE : undefined,
+    functionName: 'nextId',
+    query: { enabled: validBUNDLE },
+  })
+  const bundleIds = useMemo(() => {
+    const n = bundleNextId ? Number(bundleNextId) : 0
+    return n > 0 ? Array.from({ length: n }, (_, i) => i) : []
+  }, [bundleNextId])
+  const { data: bundleRows, refetch: refetchBundleRows } = useReadContracts({
+    contracts: bundleIds.map((id) => ({
+      abi: bundleSaleMarketAbi,
+      address: BUNDLE,
+      functionName: 'getBundle',
+      args: [BigInt(id)],
+    })),
+    query: { enabled: validBUNDLE && bundleIds.length > 0 },
+  })
+  const activeBundleCount = useMemo(() => {
+    if (!bundleRows) return 0
+    return bundleRows
+      .map((r) => (r?.result ? normBundleFromGetBundle(r.result) : null))
+      .filter(Boolean)
+      .filter((x) => x.status === 0).length
+  }, [bundleRows])
 
-  function withdrawRefund() {
-    if (!canWithdraw || !validMKT) return
-    writeContract({
-      abi: marketV2Abi,
-      address: MKT2,
-      functionName: 'withdrawRefund',
-      args: [],
-    })
-  }
+  // Direct offers
+  const { data: offerNextId, refetch: refetchOfferNextId } = useReadContract({
+    abi: directOfferMarketAbi,
+    address: validOFFER ? OFFER : undefined,
+    functionName: 'nextId',
+    query: { enabled: validOFFER },
+  })
+  const offerIds = useMemo(() => {
+    const n = offerNextId ? Number(offerNextId) : 0
+    return n > 0 ? Array.from({ length: n }, (_, i) => i) : []
+  }, [offerNextId])
+  const { data: offerRows, refetch: refetchOfferRows } = useReadContracts({
+    contracts: offerIds.map((id) => ({
+      abi: directOfferMarketAbi,
+      address: OFFER,
+      functionName: 'offers',
+      args: [BigInt(id)],
+    })),
+    query: { enabled: validOFFER && offerIds.length > 0 },
+  })
+  const activeOfferCount = useMemo(() => {
+    if (!offerRows) return 0
+    return offerRows.map((r) => (r?.result ? normOffer(r.result) : null)).filter(Boolean).filter((x) => x.status === 0).length
+  }, [offerRows])
 
+  // ----- Surrender + Transfer (unchanged) -----
   const periodId = new Date().getFullYear()
   const ZERO32 = '0x' + '00'.repeat(32)
   const evidenceURI = 'data:application/json;utf8,%7B%7D'
@@ -318,22 +373,21 @@ export default function Dashboard() {
     refetchBal()
     refetchQuota()
     refetchProfile()
-    refetchRefund()
-    refetchNextId(); refetchSell()
-    refetchNextBuyId(); refetchBuy()
-    refetchNextBlindId(); refetchBlind()
+
+    refetchFixedNextId(); refetchFixedRows()
+    refetchOpenNextId(); refetchOpenRows()
+    refetchBuyNextId(); refetchBuyRows()
+    refetchBlindNextId(); refetchBlindRows()
+    refetchDutchNextId(); refetchDutchRows()
+    refetchBundleNextId(); refetchBundleRows()
+    refetchOfferNextId(); refetchOfferRows()
   }
 
   useEffect(() => {
     if (!txHash) return
     doRefetchAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [txHash])
-
-  useWatchContractEvent({ abi: marketV2Abi, address: validMKT ? MKT2 : undefined, eventName: 'ListedFixed', onLogs: doRefetchAll })
-  useWatchContractEvent({ abi: marketV2Abi, address: validMKT ? MKT2 : undefined, eventName: 'ListedAuction', onLogs: doRefetchAll })
-  useWatchContractEvent({ abi: marketV2Abi, address: validMKT ? MKT2 : undefined, eventName: 'BuyOrderCreated', onLogs: doRefetchAll })
-  useWatchContractEvent({ abi: marketV2Abi, address: validMKT ? MKT2 : undefined, eventName: 'ListedBlind', onLogs: doRefetchAll })
-  useWatchContractEvent({ abi: marketV2Abi, address: validMKT ? MKT2 : undefined, eventName: 'Refunded', onLogs: doRefetchAll })
 
   useWatchContractEvent({
     abi: allowance20Abi,
@@ -398,7 +452,7 @@ export default function Dashboard() {
             <div>
               <h3 style={{ margin: 0 }}>Marketplace overview</h3>
               <div className="subtle" style={{ fontSize: 12, marginTop: 6 }}>
-                Sell / Buy requests / Blind auctions • Refund kezelés itt is.
+                7 modes • only counts (active)
               </div>
             </div>
 
@@ -406,36 +460,68 @@ export default function Dashboard() {
               <button className="btn" onClick={doRefetchAll} style={{ padding: '6px 10px' }}>
                 Refresh
               </button>
-              <button className="btn" onClick={withdrawRefund} disabled={!isConnected || isTxPending || !canWithdraw}>
-                Withdraw refunds
-              </button>
             </div>
           </div>
 
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
               gap: 12,
               marginTop: 14,
             }}
           >
             <div className="card" style={{ padding: 14 }}>
-              <div className="subtle" style={{ fontSize: 12 }}>Active sell listings</div>
-              <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, marginTop: 6 }}>{activeSellCount}</div>
+              <div className="subtle" style={{ fontSize: 12 }}>Sell fixed</div>
+              <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, marginTop: 6 }}>{activeFixedCount}</div>
             </div>
+
             <div className="card" style={{ padding: 14 }}>
-              <div className="subtle" style={{ fontSize: 12 }}>Active buy requests</div>
+              <div className="subtle" style={{ fontSize: 12 }}>Open auctions</div>
+              <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, marginTop: 6 }}>{activeOpenCount}</div>
+            </div>
+
+            <div className="card" style={{ padding: 14 }}>
+              <div className="subtle" style={{ fontSize: 12 }}>Buy orders</div>
               <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, marginTop: 6 }}>{activeBuyCount}</div>
             </div>
+
             <div className="card" style={{ padding: 14 }}>
-              <div className="subtle" style={{ fontSize: 12 }}>Active blind auctions</div>
+              <div className="subtle" style={{ fontSize: 12 }}>Blind auctions</div>
               <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, marginTop: 6 }}>{activeBlindCount}</div>
+            </div>
+
+            <div className="card" style={{ padding: 14 }}>
+              <div className="subtle" style={{ fontSize: 12 }}>Dutch auctions</div>
+              <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, marginTop: 6 }}>{activeDutchCount}</div>
+            </div>
+
+            <div className="card" style={{ padding: 14 }}>
+              <div className="subtle" style={{ fontSize: 12 }}>Bundles</div>
+              <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, marginTop: 6 }}>{activeBundleCount}</div>
+            </div>
+
+            <div className="card" style={{ padding: 14 }}>
+              <div className="subtle" style={{ fontSize: 12 }}>Offers</div>
+              <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, marginTop: 6 }}>{activeOfferCount}</div>
+            </div>
+
+            <div className="card" style={{ padding: 14 }}>
+              <div className="subtle" style={{ fontSize: 12 }}>Node OK</div>
+              <div style={{ fontSize: 20, fontWeight: 800, marginTop: 6 }}>
+                {validFIXED && validOPENA && validBUY && validBLIND && validDUTCH && validBUNDLE && validOFFER ? 'Yes' : 'Check .env'}
+              </div>
             </div>
           </div>
 
           <div className="subtle" style={{ fontSize: 12, marginTop: 10 }}>
-            nextId: {nextId !== undefined ? nextId.toString() : '…'} • nextBuyId: {nextBuyId !== undefined ? nextBuyId.toString() : '…'} • nextBlindId: {nextBlindId !== undefined ? nextBlindId.toString() : '…'}
+            nextId fixed: {fixedNextId !== undefined ? fixedNextId.toString() : '…'} •
+            open: {openNextId !== undefined ? openNextId.toString() : '…'} •
+            buy: {buyNextId !== undefined ? buyNextId.toString() : '…'} •
+            blind: {blindNextId !== undefined ? blindNextId.toString() : '…'} •
+            dutch: {dutchNextId !== undefined ? dutchNextId.toString() : '…'} •
+            bundle: {bundleNextId !== undefined ? bundleNextId.toString() : '…'} •
+            offer: {offerNextId !== undefined ? offerNextId.toString() : '…'}
           </div>
         </section>
 
