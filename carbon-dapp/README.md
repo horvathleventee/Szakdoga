@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# carbon-dapp
 
-## Getting Started
+A `carbon-dapp` a szakdolgozati projekt fo felhasznaloi felulete.  
+Ez egy Next.js alapu webalkalmazas, amely a Sepolia halozaton futtathato CAC smart contractokhoz kapcsolodik.
 
-First, run the development server:
+## Fobb funkciok
 
-```bash
+- wallet connect
+- dashboard es token egyenleg megjelenites
+- vallalati profilkezeles
+- KYC status megjelenites
+- dokumentum- es metadata-feltoltes Pinata / IPFS hasznalataval
+- admin oldal KYC jovahagyashoz
+- surrender riportok
+- receipt oldal QR tamogatassal
+- tobbfele marketplace oldal
+
+## Technologiak
+
+- Next.js 16
+- React 19
+- Wagmi
+- Viem
+- React Query
+- Pinata / IPFS
+
+## Mappa szerepe
+
+Ez a csomag csak a frontendet tartalmazza.  
+A contract deployment es a blokklanc oldali logika a `../carbon-allowance` projektben talalhato.
+
+## Futtatas lokalban
+
+```powershell
+cd carbon-dapp
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Build ellenorzes:
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```powershell
+npm run lint
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Szükséges env valtozok
 
-## Learn More
+Peldak:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+NEXT_PUBLIC_RPC_URL=...
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_ALLOWANCE20_ADDRESS=...
+NEXT_PUBLIC_REGISTRY_ADDRESS=...
+NEXT_PUBLIC_MARKET_FIXED_ADDRESS=...
+NEXT_PUBLIC_MARKET_OPEN_AUCTION_ADDRESS=...
+NEXT_PUBLIC_MARKET_BUY_ORDER_ADDRESS=...
+NEXT_PUBLIC_MARKET_BLIND_AUCTION_ADDRESS=...
+NEXT_PUBLIC_MARKET_DUTCH_ADDRESS=...
+NEXT_PUBLIC_MARKET_BUNDLE_ADDRESS=...
+NEXT_PUBLIC_MARKET_OFFER_ADDRESS=...
+PINATA_JWT=...
+PINATA_GATEWAY=...
+NEXT_PUBLIC_PINATA_GATEWAY=...
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Az env-eket helyileg `.env.local` fajlban, productionben pedig Vercel environment variable-kent erdemes kezelni.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Fontos oldalak
 
-## Deploy on Vercel
+- `/` dashboard
+- `/profile` vallalati profil es dokumentumok
+- `/admin` KYC approval
+- `/reports` surrender riportok
+- `/receipt/[tx]` tranzakcios receipt
+- `/marketplace/*` piacteri oldalak
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Hosting
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Javasolt hosting: Vercel
+
+Ajánlott beallitas:
+- Framework: Next.js
+- Root directory: `carbon-dapp`
+- Production env-ek: a helyi `.env.local` alapjan
+
+## Megjegyzes
+
+A projektben tobb oldal blokklanc adatokat olvas es tranzakciokat kuld. Emiatt production hasznalatnal kiemelten fontos:
+
+- a helyes RPC URL
+- a pontos contract cimek
+- a Pinata token biztonsagos kezelese
+- a wallet csatlakozas Sepolia halozaton
