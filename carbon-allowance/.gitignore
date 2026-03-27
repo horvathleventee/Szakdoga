@@ -1,5 +1,6 @@
 node_modules
 .env
+.addr*.local
 
 # Hardhat files
 /cache

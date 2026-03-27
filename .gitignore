@@ -1,5 +1,11 @@
-# build artifacts (ha később csinálnál)
+# build artifacts
 dist/
 node_modules/
-# helyi beállítás
+
+# local config
 src/config.js
+
+# repo-local notes
+duma.txt
+megbeszeles.txt
+szakdoga.txt

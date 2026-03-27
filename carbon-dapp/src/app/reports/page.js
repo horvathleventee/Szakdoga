@@ -80,50 +80,54 @@ export default function ReportsPage() {
 
         <div style={{ marginTop: 12 }}>
           <h4>Totals by year</h4>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Year</th>
-                <th>Total CAC</th>
-              </tr>
-            </thead>
-            <tbody>
-              {totalsByYear.map(([year, sum]) => (
-                <tr key={year}>
-                  <td>{year}</td>
-                  <td>{sum}</td>
-                </tr>
-              ))}
-              {totalsByYear.length === 0 && (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
                 <tr>
-                  <td colSpan={2}>No data</td>
+                  <th>Year</th>
+                  <th>Total CAC</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {totalsByYear.map(([year, sum]) => (
+                  <tr key={year}>
+                    <td>{year}</td>
+                    <td>{sum}</td>
+                  </tr>
+                ))}
+                {totalsByYear.length === 0 && (
+                  <tr>
+                    <td colSpan={2}>No data</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div style={{ marginTop: 12 }}>
           <h4>Latest events</h4>
           {!latest.length && <div>No data</div>}
           {!!latest.length && (
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+            <div className="qr-list">
               {latest.map((item) => (
-                <div key={item.key} className="card" style={{ padding: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{item.user}</div>
+                <div key={item.key} className="card qr-list-card" style={{ padding: 12 }}>
+                  <div className="qr-list-content">
+                    <div style={{ fontWeight: 600, fontSize: 13, overflowWrap: 'anywhere' }}>{item.user}</div>
                     <div className="subtle" style={{ fontSize: 12, marginTop: 4 }}>
                       {item.amount} CAC | year {item.periodId}
                     </div>
                     <div className="subtle" style={{ fontSize: 11, marginTop: 4 }}>
                       at {formatDate(item.ts)}
                     </div>
-                    <div className="subtle" style={{ fontSize: 11, overflowWrap: 'anywhere', marginTop: 4 }}>
+                    <div className="subtle link-wrap" style={{ fontSize: 11, marginTop: 4 }}>
                       <a href={item.receiptUrl}>{item.txHash}</a>
                     </div>
                   </div>
-                  <a href={item.receiptUrl} title="Open receipt" style={{ marginLeft: 'auto', width: 96, height: 96 }}>
-                    <QRCode value={item.receiptUrl} size={96} />
+                  <a href={item.receiptUrl} title="Open receipt" className="qr-list-aside">
+                    <div className="qr-frame">
+                      <QRCode value={item.receiptUrl} size={96} />
+                    </div>
                   </a>
                 </div>
               ))}

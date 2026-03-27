@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# stray local artifacts
+next
+npm
+{
+carbon-dapp@0.1.0

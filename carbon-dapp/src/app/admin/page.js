@@ -143,7 +143,7 @@ export default function AdminPage() {
       <h1 className="page-title">Admin - KYC approvals</h1>
 
       <section className="card col-12">
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="toolbar">
           <button className="btn" onClick={load} disabled={loading}>
             {loading ? 'Loading...' : 'Refresh'}
           </button>
@@ -157,7 +157,7 @@ export default function AdminPage() {
         {!rows.length ? (
           <div style={{ marginTop: 12 }}>No registrations found.</div>
         ) : (
-          <div className="grid" style={{ marginTop: 12 }}>
+          <div className="stack" style={{ marginTop: 12 }}>
             {rows.map((row) => {
               const meta = row.metaParsed || {}
               const email = meta?.contact?.email || '-'
@@ -195,7 +195,7 @@ export default function AdminPage() {
                       <b>Reject note:</b> {row.kycNote}
                     </div>
                   )}
-                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <div className="inline-actions" style={{ marginTop: 10 }}>
                     {!row.kycApproved && (
                       <button className="btn" disabled={isPending} onClick={() => approve(row.user)}>
                         Approve
@@ -213,7 +213,7 @@ export default function AdminPage() {
       </section>
 
       <section className="card col-12" style={{ marginTop: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div className="toolbar">
           <h2 style={{ margin: 0 }}>Surrenders (all users)</h2>
           <button className="btn" onClick={loadSurrenders} disabled={surrLoading}>
             {surrLoading ? 'Loading...' : 'Refresh'}
@@ -224,10 +224,10 @@ export default function AdminPage() {
         {!surrLogs.length ? (
           <div style={{ marginTop: 12 }}>No surrender events.</div>
         ) : (
-          <div className="grid" style={{ marginTop: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
+          <div className="qr-list" style={{ marginTop: 12 }}>
             {surrLogs.map((item) => (
-              <div key={item.key} className="card" style={{ padding: 12, display: 'flex', gap: 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
+              <div key={item.key} className="card qr-list-card" style={{ padding: 12 }}>
+                <div className="qr-list-content">
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{item.displayName || item.user}</div>
                   <div className="subtle" style={{ fontSize: 12, marginTop: 4, overflowWrap: 'anywhere' }}>
                     {item.user}
@@ -242,8 +242,10 @@ export default function AdminPage() {
                     <b>Tx:</b> <a href={`/receipt/${item.txHash}`}>{item.txHash}</a>
                   </div>
                 </div>
-                <a href={`/receipt/${item.txHash}`} title="Open receipt" style={{ display: 'block', width: 110, height: 110 }}>
-                  <QRCode value={typeof window !== 'undefined' ? `${window.location.origin}/receipt/${item.txHash}` : `/receipt/${item.txHash}`} size={110} />
+                <a href={`/receipt/${item.txHash}`} title="Open receipt" className="qr-list-aside">
+                  <div className="qr-frame">
+                    <QRCode value={typeof window !== 'undefined' ? `${window.location.origin}/receipt/${item.txHash}` : `/receipt/${item.txHash}`} size={110} />
+                  </div>
                 </a>
               </div>
             ))}

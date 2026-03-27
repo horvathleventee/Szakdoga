@@ -25,7 +25,7 @@ const bottomItems = [
   { href: '/settings', label: 'Settings', icon: 'ST' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
   const path = usePathname()
   const isMarketPath = useMemo(() => (path || '').startsWith('/marketplace'), [path])
   const [marketOpen, setMarketOpen] = useState(() => isMarketPath)
@@ -35,7 +35,14 @@ export default function Sidebar() {
   const marketActive = isMarketPath ? 'active' : ''
 
   return (
-    <aside className="sidebar">
+    <>
+      <button
+        type="button"
+        className={`sidebar-overlay ${mobileOpen ? 'open' : ''}`}
+        aria-label="Close navigation"
+        onClick={onClose}
+      />
+      <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
       <div className="brand">
         <div className="fox" />
         <div>
@@ -47,7 +54,7 @@ export default function Sidebar() {
       <nav className="nav">
         <div className="nav-section">Overview</div>
         {topItems.map((item) => (
-          <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+          <Link key={item.href} href={item.href} className={linkClass(item.href)} onClick={onClose}>
             <span className="nav-ico">{item.icon}</span>
             <span className="nav-label">{item.label}</span>
           </Link>
@@ -71,7 +78,12 @@ export default function Sidebar() {
           {showMarketItems && (
             <div className="nav-sub">
               {marketItems.map((item) => (
-                <Link key={item.href} href={item.href} className={`sub-link ${linkClass(item.href)}`}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`sub-link ${linkClass(item.href)}`}
+                  onClick={onClose}
+                >
                   <span className="nav-ico">{item.icon}</span>
                   <span className="nav-label">{item.label}</span>
                 </Link>
@@ -82,7 +94,7 @@ export default function Sidebar() {
 
         <div className="nav-section">Tools</div>
         {bottomItems.map((item) => (
-          <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+          <Link key={item.href} href={item.href} className={linkClass(item.href)} onClick={onClose}>
             <span className="nav-ico">{item.icon}</span>
             <span className="nav-label">{item.label}</span>
           </Link>
@@ -93,6 +105,7 @@ export default function Sidebar() {
         <div>v0.1</div>
         <div>Sepolia live</div>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }
