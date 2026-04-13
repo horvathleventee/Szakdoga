@@ -1,13 +1,23 @@
 import { NextResponse } from 'next/server'
-import { getRegistrationRows } from '../../../../lib/serverChain'
+import { getOperatorAddress, getRegistrationRows } from '../../../../lib/serverChain'
+import { verifyWalletAuthRequest } from '../../../../lib/walletAuth'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
+export async function GET(req) {
   try {
+    const address = await verifyWalletAuthRequest(req, 'admin-read')
+    const operator = await getOperatorAddress()
+    if (address.toLowerCase() !== String(operator).toLowerCase()) {
+      return NextResponse.json({ error: 'Admin access denied.' }, { status: 403 })
+    }
     const rows = await getRegistrationRows()
     return NextResponse.json({ rows })
   } catch (error) {
-    return NextResponse.json({ error: error?.message || String(error) }, { status: 500 })
+    const message = error?.message || String(error)
+    const status = message.toLowerCase().includes('wallet authentication') || message.toLowerCase().includes('signature')
+      ? 401
+      : 500
+    return NextResponse.json({ error: message }, { status })
   }
 }

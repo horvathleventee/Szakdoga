@@ -5,11 +5,13 @@ import QRCode from 'react-qr-code'
 import {
   useAccount,
   useReadContract,
+  useSignMessage,
   useWaitForTransactionReceipt,
   useWatchContractEvent,
   useWriteContract,
 } from 'wagmi'
 import { cacRegistryAbi } from '../../abi/CacRegistry'
+import { createWalletAuthHeaders } from '../../lib/walletAuth'
 
 const REG = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS
 const GATEWAY =
@@ -24,6 +26,7 @@ function resolveIpfs(uri) {
 
 export default function AdminPage() {
   const { address, isConnected } = useAccount()
+  const { signMessageAsync } = useSignMessage()
   const { writeContract, isPending, error: txError, data: txHash } = useWriteContract()
   const { isSuccess: txMined } = useWaitForTransactionReceipt({ hash: txHash })
 
@@ -47,11 +50,23 @@ export default function AdminPage() {
   const [surrLoading, setSurrLoading] = useState(false)
   const [surrErr, setSurrErr] = useState('')
 
-  async function load() {
+  async function getAdminAuthHeaders() {
+    return createWalletAuthHeaders({
+      address,
+      purpose: 'admin-read',
+      signMessageAsync,
+    })
+  }
+
+  async function load(providedHeaders) {
     try {
       setLoading(true)
       setErr('')
-      const response = await fetch('/api/admin/registrations', { cache: 'no-store' })
+      const authHeaders = providedHeaders || await getAdminAuthHeaders()
+      const response = await fetch('/api/admin/registrations', {
+        cache: 'no-store',
+        headers: authHeaders,
+      })
       const data = await response.json()
       if (!response.ok) throw new Error(data?.error || 'Failed to load registrations')
       setRows(data.rows || [])
@@ -62,11 +77,15 @@ export default function AdminPage() {
     }
   }
 
-  async function loadSurrenders() {
+  async function loadSurrenders(providedHeaders) {
     try {
       setSurrLoading(true)
       setSurrErr('')
-      const response = await fetch('/api/admin/surrenders', { cache: 'no-store' })
+      const authHeaders = providedHeaders || await getAdminAuthHeaders()
+      const response = await fetch('/api/admin/surrenders', {
+        cache: 'no-store',
+        headers: authHeaders,
+      })
       const data = await response.json()
       if (!response.ok) throw new Error(data?.error || 'Failed to load surrender events')
       setSurrLogs(data.rows || [])
@@ -77,15 +96,21 @@ export default function AdminPage() {
     }
   }
 
+  async function loadAll() {
+    const authHeaders = await getAdminAuthHeaders()
+    await Promise.all([load(authHeaders), loadSurrenders(authHeaders)])
+  }
+
   useEffect(() => {
     if (isOperator) {
-      load()
-      loadSurrenders()
+      loadAll()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOperator])
 
   useEffect(() => {
     if (txMined) load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [txMined])
 
   useWatchContractEvent({

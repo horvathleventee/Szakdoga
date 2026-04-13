@@ -1,7 +1,10 @@
 export async function pinJsonToIPFS(json, opts = {}) {
   const r = await fetch('/api/pin/json', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(opts.authHeaders || {}),
+    },
     body: JSON.stringify({
       data: json,
       name: opts.name || '',
@@ -19,7 +22,11 @@ export async function pinFileToIPFS(file, opts = {}) {
   fd.append('name', opts.name || '')
   fd.append('keyvalues', JSON.stringify(opts.keyvalues || {}))
 
-  const r = await fetch('/api/pin/file', { method: 'POST', body: fd })
+  const r = await fetch('/api/pin/file', {
+    method: 'POST',
+    headers: { ...(opts.authHeaders || {}) },
+    body: fd,
+  })
   if (!r.ok) throw new Error(await r.text())
   const { uri } = await r.json()
   return uri

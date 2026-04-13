@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useAccount, useReadContract, useWriteContract, useWatchContractEvent } from 'wagmi'
+import { useAccount, useReadContract, useSignMessage, useWriteContract, useWatchContractEvent } from 'wagmi'
 import { keccak256, stringToHex } from 'viem'
 import { cacRegistryAbi } from '../../abi/CacRegistry'
 import { pinJsonToIPFS, pinFileToIPFS } from '../../lib/pinata'
+import { createWalletAuthHeaders } from '../../lib/walletAuth'
 
 const REG = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS
 const GW = process.env.NEXT_PUBLIC_PINATA_GATEWAY || 'https://gateway.pinata.cloud/ipfs/'
@@ -52,6 +53,7 @@ export default function ProfilePage() {
   })
 
   const { writeContract, isPending, error: txError, data: txHash } = useWriteContract()
+  const { signMessageAsync } = useSignMessage()
 
   const [displayName, setDisplayName] = useState('Teszt Kft.')
   const [taxId, setTaxId] = useState('HU-12345678')
@@ -99,7 +101,7 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, currentDocsURI])
 
-  async function buildMetadataURI() {
+  async function buildMetadataURI(authHeaders) {
     const json = {
       version: '1.0.0',
       displayName,
@@ -112,6 +114,7 @@ export default function ProfilePage() {
       return await pinJsonToIPFS(json, {
         name: niceName,
         keyvalues: { app: 'CAC', owner: address, displayName, type: 'metadata' },
+        authHeaders,
       })
     } catch (error) {
       setUiWarn(`Pinata metadata upload failed, using inline fallback: ${error?.message || 'unknown error'}`)
@@ -120,7 +123,7 @@ export default function ProfilePage() {
     }
   }
 
-  async function uploadDocFile(file) {
+  async function uploadDocFile(file, authHeaders) {
     if (!file || !address) return ''
 
     const safeDisplay = String(displayName || 'Company').replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 32)
@@ -138,6 +141,7 @@ export default function ProfilePage() {
           type: 'ownership_deed',
           original: safeFile,
         },
+        authHeaders,
       })
     } catch (error) {
       setUiWarn(`Pinata upload failed: ${error?.message || 'missing or invalid server PINATA_JWT'}`)
@@ -145,7 +149,7 @@ export default function ProfilePage() {
     }
   }
 
-  async function appendDocToIndexAndSave(newDoc) {
+  async function appendDocToIndexAndSave(newDoc, authHeaders) {
     if (!address) return
 
     let idx = docsIndex
@@ -167,6 +171,7 @@ export default function ProfilePage() {
     const indexUri = await pinJsonToIPFS(next, {
       name,
       keyvalues: { app: 'CAC', owner: address, displayName: safeDisplay, type: 'docs_index' },
+      authHeaders,
     })
 
     await writeContract({
@@ -188,7 +193,12 @@ export default function ProfilePage() {
     setUiWarn('')
 
     const taxIdHash = keccak256(stringToHex(taxId))
-    const metadataURI = await buildMetadataURI()
+    const authHeaders = await createWalletAuthHeaders({
+      address,
+      purpose: 'pinata-upload',
+      signMessageAsync,
+    })
+    const metadataURI = await buildMetadataURI(authHeaders)
 
     await writeContract({
       abi: cacRegistryAbi,
@@ -198,13 +208,13 @@ export default function ProfilePage() {
     })
 
     if (ownershipFile) {
-      const fileUri = await uploadDocFile(ownershipFile)
+      const fileUri = await uploadDocFile(ownershipFile, authHeaders)
       if (fileUri) {
         await appendDocToIndexAndSave({
           name: ownershipFile.name || 'Ownership deed',
           uri: fileUri,
           addedAt: Math.floor(Date.now() / 1000),
-        })
+        }, authHeaders)
       }
     }
 
@@ -217,7 +227,12 @@ export default function ProfilePage() {
     if (!isReg) return
     setUiInfo('')
     setUiWarn('')
-    const metadataURI = await buildMetadataURI()
+    const authHeaders = await createWalletAuthHeaders({
+      address,
+      purpose: 'pinata-upload',
+      signMessageAsync,
+    })
+    const metadataURI = await buildMetadataURI(authHeaders)
     await writeContract({
       abi: cacRegistryAbi,
       address: REG,
@@ -238,14 +253,19 @@ export default function ProfilePage() {
       return
     }
 
-    const fileUri = await uploadDocFile(ownershipFile)
+    const authHeaders = await createWalletAuthHeaders({
+      address,
+      purpose: 'pinata-upload',
+      signMessageAsync,
+    })
+    const fileUri = await uploadDocFile(ownershipFile, authHeaders)
     if (!fileUri) return
 
     await appendDocToIndexAndSave({
       name: ownershipFile.name || 'Ownership deed',
       uri: fileUri,
       addedAt: Math.floor(Date.now() / 1000),
-    })
+    }, authHeaders)
   }
 
   useWatchContractEvent({

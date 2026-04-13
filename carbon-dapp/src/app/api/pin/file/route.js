@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
+import { verifyWalletAuthRequest } from '../../../../lib/walletAuth'
 
 export async function POST(req) {
   try {
+    await verifyWalletAuthRequest(req, 'pinata-upload')
+
     const rawJwt = String(process.env.PINATA_JWT || '').trim()
     if (!rawJwt) return new NextResponse('Missing PINATA_JWT', { status: 500 })
     const jwt = rawJwt.toLowerCase().startsWith('bearer ') ? rawJwt : `Bearer ${rawJwt}`
@@ -45,6 +48,10 @@ export async function POST(req) {
     const cid = j.IpfsHash
     return NextResponse.json({ uri: `ipfs://${cid}` })
   } catch (e) {
-    return new NextResponse(e?.message || String(e), { status: 500 })
+    const message = e?.message || String(e)
+    const status = message.toLowerCase().includes('wallet authentication') || message.toLowerCase().includes('signature')
+      ? 401
+      : 500
+    return new NextResponse(message, { status })
   }
 }

@@ -139,3 +139,13 @@ export async function getSurrenderRows() {
     }))
     .reverse()
 }
+
+export async function getOperatorAddress() {
+  return withRetry(() =>
+    client.readContract({
+      abi: cacRegistryAbi,
+      address: REG,
+      functionName: 'operator',
+    })
+  )
+}
