@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
+import { prettyError } from '../lib/errorMessages'
 
 // Ennek BITRE pontosan egyeznie kell a CacMarketplace.sol-ban lévő eventtel
 const PURCHASED_EVENT = parseAbiItem(
@@ -92,7 +93,7 @@ export default function ReportsChartLite({ marketAddress }) {
       setRows(data)
     } catch (e) {
       console.error(e)
-      setError(e.shortMessage || e.message || String(e))
+      setError(prettyError(e))
       setRows([])
     } finally {
       setLoading(false)

@@ -14,17 +14,19 @@ import { injected } from 'wagmi/connectors'
 
 import { allowance20Abi } from '../abi/Allowance20'
 import { cacRegistryAbi } from '../abi/CacRegistry'
+import { prettyError } from '../lib/errorMessages'
 
 const CAC = process.env.NEXT_PUBLIC_ALLOWANCE20_ADDRESS
 const REG = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS
 
 const isHexAddress = (x) => typeof x === 'string' && /^0x[0-9a-fA-F]{40}$/.test(x)
+const isWholeNumber = (value) => /^[0-9]+$/.test(String(value || '').trim())
 
 const DashboardMarketOverview = dynamic(() => import('../components/DashboardMarketOverview'), {
   ssr: false,
   loading: () => (
     <section className="card col-8">
-      <h3 style={{ margin: 0 }}>Marketplace overview</h3>
+      <h2 style={{ margin: 0 }}>Marketplace overview</h2>
       <div className="subtle" style={{ marginTop: 10 }}>Loading market stats...</div>
     </section>
   ),
@@ -86,11 +88,33 @@ export default function Dashboard() {
   const [sAmount, setSAmount] = useState('10')
   const [tTo, setTTo] = useState('')
   const [tAmount, setTAmount] = useState('5')
+  const [formError, setFormError] = useState('')
+  const [activeAction, setActiveAction] = useState('')
 
   function doSurrender() {
-    if (!sAmount || !isConnected || !validCAC) return
+    setActiveAction('surrender')
+    setFormError('')
+    if (!isConnected) {
+      setFormError('Csatlakoztasd a walleted a muvelet inditasahoz.')
+      return
+    }
+    if (!validCAC) {
+      setFormError('Hibas token szerzodescim van beallitva.')
+      return
+    }
+    if (!isWholeNumber(sAmount)) {
+      setFormError('Adj meg 0-nal nagyobb egesz CAC mennyiseget.')
+      return
+    }
     const amt = BigInt(sAmount)
-    if (amt <= 0n) return
+    if (amt <= 0n) {
+      setFormError('Adj meg 0-nal nagyobb egesz CAC mennyiseget.')
+      return
+    }
+    if (balance !== undefined && amt > BigInt(balance)) {
+      setFormError('Nincs eleg CAC tokened a bevaltashoz.')
+      return
+    }
     writeContract({
       abi: allowance20Abi,
       address: CAC,
@@ -100,9 +124,33 @@ export default function Dashboard() {
   }
 
   function doTransfer() {
-    if (!tTo || !tAmount || !isConnected || !validCAC) return
+    setActiveAction('transfer')
+    setFormError('')
+    if (!isConnected) {
+      setFormError('Csatlakoztasd a walleted a muvelet inditasahoz.')
+      return
+    }
+    if (!validCAC) {
+      setFormError('Hibas token szerzodescim van beallitva.')
+      return
+    }
+    if (!isHexAddress(tTo)) {
+      setFormError('Ervenytelen fogado Ethereum-cim. 0x-szel kezdodo, 42 karakteres cimet adj meg.')
+      return
+    }
+    if (!isWholeNumber(tAmount)) {
+      setFormError('Adj meg 0-nal nagyobb egesz CAC mennyiseget.')
+      return
+    }
     const amt = BigInt(tAmount)
-    if (amt <= 0n) return
+    if (amt <= 0n) {
+      setFormError('Adj meg 0-nal nagyobb egesz CAC mennyiseget.')
+      return
+    }
+    if (balance !== undefined && amt > BigInt(balance)) {
+      setFormError('Nincs eleg CAC tokened az atutalashoz.')
+      return
+    }
     writeContract({
       abi: allowance20Abi,
       address: CAC,
@@ -116,6 +164,9 @@ export default function Dashboard() {
     refetchQuota()
     refetchProfile()
   }
+
+  const txErrText = prettyError(txError)
+  const connectErrText = prettyError(connectError)
 
   useEffect(() => {
     if (!txHash) return
@@ -179,7 +230,7 @@ export default function Dashboard() {
 
           {connectError && (
             <div style={{ color: 'crimson', fontSize: 12, marginTop: 10 }}>
-              {connectError.message}
+              {connectErrText}
             </div>
           )}
         </section>
@@ -187,7 +238,7 @@ export default function Dashboard() {
         <DashboardMarketOverview refreshTrigger={txHash} />
 
         <section className="card col-6">
-          <h3 style={{ marginTop: 0 }}>Surrender credits</h3>
+          <h2 style={{ marginTop: 0, fontSize: 20 }}>Surrender credits</h2>
           <p className="subtle">Adj meg egy mennyiseget (egesz CAC). A tobbi demo automatikus.</p>
 
           <label>
@@ -208,12 +259,14 @@ export default function Dashboard() {
             >
               {isTxPending ? 'Submitting...' : 'Surrender now'}
             </button>
-            {txError && <span style={{ color: 'crimson', fontSize: 12 }}>{txError.message}</span>}
+            {activeAction === 'surrender' && (formError || txErrText) && (
+              <span style={{ color: 'crimson', fontSize: 12 }}>{formError || txErrText}</span>
+            )}
           </div>
         </section>
 
         <section className="card col-6">
-          <h3 style={{ marginTop: 0 }}>Transfer credits</h3>
+          <h2 style={{ marginTop: 0, fontSize: 20 }}>Transfer credits</h2>
           <p className="subtle">Kreditek atkuldese masik walletre ERC-20 transferrel.</p>
 
           <div className="grid grid-2">
@@ -231,6 +284,9 @@ export default function Dashboard() {
             <button className="btn" onClick={doTransfer} disabled={!isConnected || isTxPending || !tTo || !tAmount}>
               {isTxPending ? 'Submitting...' : 'Transfer'}
             </button>
+            {activeAction === 'transfer' && (formError || txErrText) && (
+              <span style={{ color: 'crimson', fontSize: 12, alignSelf: 'center' }}>{formError || txErrText}</span>
+            )}
           </div>
         </section>
       </div>

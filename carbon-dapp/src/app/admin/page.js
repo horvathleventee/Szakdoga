@@ -11,7 +11,8 @@ import {
   useWriteContract,
 } from 'wagmi'
 import { cacRegistryAbi } from '../../abi/CacRegistry'
-import { createWalletAuthHeaders } from '../../lib/walletAuth'
+import { getWalletAuthHeaders } from '../../lib/walletAuth'
+import { prettyError } from '../../lib/errorMessages'
 
 const REG = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS
 const GATEWAY =
@@ -51,7 +52,7 @@ export default function AdminPage() {
   const [surrErr, setSurrErr] = useState('')
 
   async function getAdminAuthHeaders() {
-    return createWalletAuthHeaders({
+    return getWalletAuthHeaders({
       address,
       purpose: 'admin-read',
       signMessageAsync,
@@ -71,7 +72,7 @@ export default function AdminPage() {
       if (!response.ok) throw new Error(data?.error || 'Failed to load registrations')
       setRows(data.rows || [])
     } catch (error) {
-      setErr(error?.message || String(error))
+      setErr(prettyError(error))
     } finally {
       setLoading(false)
     }
@@ -90,15 +91,21 @@ export default function AdminPage() {
       if (!response.ok) throw new Error(data?.error || 'Failed to load surrender events')
       setSurrLogs(data.rows || [])
     } catch (error) {
-      setSurrErr(error?.message || String(error))
+      setSurrErr(prettyError(error))
     } finally {
       setSurrLoading(false)
     }
   }
 
   async function loadAll() {
-    const authHeaders = await getAdminAuthHeaders()
-    await Promise.all([load(authHeaders), loadSurrenders(authHeaders)])
+    try {
+      const authHeaders = await getAdminAuthHeaders()
+      await Promise.all([load(authHeaders), loadSurrenders(authHeaders)])
+    } catch (error) {
+      const message = prettyError(error)
+      setErr(message)
+      setSurrErr(message)
+    }
   }
 
   useEffect(() => {
@@ -175,7 +182,7 @@ export default function AdminPage() {
           <span className="subtle">
             Current operator: <code>{operatorAddr || '...'}</code>
           </span>
-          {txError && <span style={{ color: 'crimson' }}>{txError.message}</span>}
+          {txError && <span style={{ color: 'crimson' }}>{prettyError(txError)}</span>}
           {err && <span style={{ color: 'crimson' }}>{err}</span>}
         </div>
 

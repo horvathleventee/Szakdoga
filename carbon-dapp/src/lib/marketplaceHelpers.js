@@ -21,13 +21,4 @@ export function cmpBig(a, b) {
   }
 }
 
-export function prettyError(err) {
-  if (!err) return ''
-  const msg =
-    err.shortMessage ||
-    err.details ||
-    err.message ||
-    (typeof err === 'string' ? err : '')
-  if (!msg) return 'Transaction failed.'
-  return String(msg).replace(/^Error:\s*/i, '')
-}
+export { prettyError } from './errorMessages'

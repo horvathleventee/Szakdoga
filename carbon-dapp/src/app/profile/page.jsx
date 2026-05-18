@@ -5,7 +5,8 @@ import { useAccount, useReadContract, useSignMessage, useWriteContract, useWatch
 import { keccak256, stringToHex } from 'viem'
 import { cacRegistryAbi } from '../../abi/CacRegistry'
 import { pinJsonToIPFS, pinFileToIPFS } from '../../lib/pinata'
-import { createWalletAuthHeaders } from '../../lib/walletAuth'
+import { getWalletAuthHeaders } from '../../lib/walletAuth'
+import { prettyError } from '../../lib/errorMessages'
 
 const REG = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS
 const GW = process.env.NEXT_PUBLIC_PINATA_GATEWAY || 'https://gateway.pinata.cloud/ipfs/'
@@ -117,7 +118,7 @@ export default function ProfilePage() {
         authHeaders,
       })
     } catch (error) {
-      setUiWarn(`Pinata metadata upload failed, using inline fallback: ${error?.message || 'unknown error'}`)
+      setUiWarn(`${prettyError(error)} Inline metadata fallback will be used.`)
       const raw = JSON.stringify(json)
       return `data:application/json;utf8,${encodeURIComponent(raw)}`
     }
@@ -144,7 +145,7 @@ export default function ProfilePage() {
         authHeaders,
       })
     } catch (error) {
-      setUiWarn(`Pinata upload failed: ${error?.message || 'missing or invalid server PINATA_JWT'}`)
+      setUiWarn(prettyError(error))
       return ''
     }
   }
@@ -192,55 +193,68 @@ export default function ProfilePage() {
     setUiInfo('')
     setUiWarn('')
 
-    const taxIdHash = keccak256(stringToHex(taxId))
-    const authHeaders = await createWalletAuthHeaders({
-      address,
-      purpose: 'pinata-upload',
-      signMessageAsync,
-    })
-    const metadataURI = await buildMetadataURI(authHeaders)
-
-    await writeContract({
-      abi: cacRegistryAbi,
-      address: REG,
-      functionName: 'register',
-      args: [taxIdHash, metadataURI, displayName],
-    })
-
-    if (ownershipFile) {
-      const fileUri = await uploadDocFile(ownershipFile, authHeaders)
-      if (fileUri) {
-        await appendDocToIndexAndSave({
-          name: ownershipFile.name || 'Ownership deed',
-          uri: fileUri,
-          addedAt: Math.floor(Date.now() / 1000),
-        }, authHeaders)
-      }
+    if (!displayName.trim() || !taxId.trim()) {
+      setUiWarn('Add meg a ceg nevet es az adoszamot a regisztraciohoz.')
+      return
     }
 
-    refetchProfile()
-    refetchNote()
-    refetchIsReg()
+    try {
+      const taxIdHash = keccak256(stringToHex(taxId))
+      const authHeaders = await getWalletAuthHeaders({
+        address,
+        purpose: 'pinata-upload',
+        signMessageAsync,
+      })
+      const metadataURI = await buildMetadataURI(authHeaders)
+
+      await writeContract({
+        abi: cacRegistryAbi,
+        address: REG,
+        functionName: 'register',
+        args: [taxIdHash, metadataURI, displayName],
+      })
+
+      if (ownershipFile) {
+        const fileUri = await uploadDocFile(ownershipFile, authHeaders)
+        if (fileUri) {
+          await appendDocToIndexAndSave({
+            name: ownershipFile.name || 'Ownership deed',
+            uri: fileUri,
+            addedAt: Math.floor(Date.now() / 1000),
+          }, authHeaders)
+        }
+      }
+
+      refetchProfile()
+      refetchNote()
+      refetchIsReg()
+    } catch (error) {
+      setUiWarn(prettyError(error))
+    }
   }
 
   async function doUpdateMetaOnly() {
     if (!isReg) return
     setUiInfo('')
     setUiWarn('')
-    const authHeaders = await createWalletAuthHeaders({
-      address,
-      purpose: 'pinata-upload',
-      signMessageAsync,
-    })
-    const metadataURI = await buildMetadataURI(authHeaders)
-    await writeContract({
-      abi: cacRegistryAbi,
-      address: REG,
-      functionName: 'updateMetadata',
-      args: [metadataURI],
-    })
-    setUiInfo('Metadata updated.')
-    refetchProfile()
+    try {
+      const authHeaders = await getWalletAuthHeaders({
+        address,
+        purpose: 'pinata-upload',
+        signMessageAsync,
+      })
+      const metadataURI = await buildMetadataURI(authHeaders)
+      await writeContract({
+        abi: cacRegistryAbi,
+        address: REG,
+        functionName: 'updateMetadata',
+        args: [metadataURI],
+      })
+      setUiInfo('Metadata updated.')
+      refetchProfile()
+    } catch (error) {
+      setUiWarn(prettyError(error))
+    }
   }
 
   async function doAddDoc() {
@@ -253,19 +267,23 @@ export default function ProfilePage() {
       return
     }
 
-    const authHeaders = await createWalletAuthHeaders({
-      address,
-      purpose: 'pinata-upload',
-      signMessageAsync,
-    })
-    const fileUri = await uploadDocFile(ownershipFile, authHeaders)
-    if (!fileUri) return
+    try {
+      const authHeaders = await getWalletAuthHeaders({
+        address,
+        purpose: 'pinata-upload',
+        signMessageAsync,
+      })
+      const fileUri = await uploadDocFile(ownershipFile, authHeaders)
+      if (!fileUri) return
 
-    await appendDocToIndexAndSave({
-      name: ownershipFile.name || 'Ownership deed',
-      uri: fileUri,
-      addedAt: Math.floor(Date.now() / 1000),
-    }, authHeaders)
+      await appendDocToIndexAndSave({
+        name: ownershipFile.name || 'Ownership deed',
+        uri: fileUri,
+        addedAt: Math.floor(Date.now() / 1000),
+      }, authHeaders)
+    } catch (error) {
+      setUiWarn(prettyError(error))
+    }
   }
 
   useWatchContractEvent({
@@ -373,7 +391,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {txError && <div style={{ color: 'crimson', marginTop: 10 }}>{txError.message}</div>}
+        {txError && <div style={{ color: 'crimson', marginTop: 10 }}>{prettyError(txError)}</div>}
       </section>
 
       <section className="card col-12">

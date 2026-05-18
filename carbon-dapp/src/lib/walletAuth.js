@@ -1,6 +1,7 @@
 import { recoverMessageAddress } from 'viem'
 
 const AUTH_WINDOW_MS = 5 * 60 * 1000
+const CACHE_PREFIX = 'cac.walletAuth'
 
 export function buildWalletAuthMessage({ address, purpose, timestamp }) {
   return [
@@ -24,6 +25,83 @@ export async function createWalletAuthHeaders({ address, purpose, signMessageAsy
     'x-wallet-purpose': purpose,
     'x-wallet-timestamp': timestamp,
     'x-wallet-signature': signature,
+  }
+}
+
+function getCacheKey(address, purpose) {
+  return `${CACHE_PREFIX}:${purpose}:${String(address).toLowerCase()}`
+}
+
+function canUseCachedAuth(cached, address, purpose) {
+  if (!cached) return false
+  if (String(cached.address || '').toLowerCase() !== String(address || '').toLowerCase()) return false
+  if (cached.purpose !== purpose) return false
+  const ts = Number(cached.timestamp)
+  if (!Number.isFinite(ts)) return false
+  return Math.abs(Date.now() - ts) <= AUTH_WINDOW_MS
+}
+
+export async function getWalletAuthHeaders({ address, purpose, signMessageAsync, forceRefresh = false }) {
+  const cacheKey = getCacheKey(address, purpose)
+
+  if (!forceRefresh && typeof window !== 'undefined' && window.sessionStorage) {
+    try {
+      const raw = window.sessionStorage.getItem(cacheKey)
+      if (raw) {
+        const cached = JSON.parse(raw)
+        if (canUseCachedAuth(cached, address, purpose)) {
+          return {
+            'x-wallet-address': cached.address,
+            'x-wallet-purpose': cached.purpose,
+            'x-wallet-timestamp': cached.timestamp,
+            'x-wallet-signature': cached.signature,
+          }
+        }
+      }
+    } catch {
+      // ignore bad cache
+    }
+  }
+
+  const headers = await createWalletAuthHeaders({ address, purpose, signMessageAsync })
+
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    try {
+      window.sessionStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          address,
+          purpose,
+          timestamp: headers['x-wallet-timestamp'],
+          signature: headers['x-wallet-signature'],
+        })
+      )
+    } catch {
+      // ignore cache write failures
+    }
+  }
+
+  return headers
+}
+
+export function clearWalletAuthCache(address, purpose) {
+  if (typeof window === 'undefined' || !window.sessionStorage || !address) return
+
+  if (purpose) {
+    window.sessionStorage.removeItem(getCacheKey(address, purpose))
+    return
+  }
+
+  const prefix = `${CACHE_PREFIX}:`
+  const normalized = String(address).toLowerCase()
+  const keysToDelete = []
+  for (let i = 0; i < window.sessionStorage.length; i += 1) {
+    const key = window.sessionStorage.key(i)
+    if (!key || !key.startsWith(prefix)) continue
+    if (key.endsWith(`:${normalized}`)) keysToDelete.push(key)
+  }
+  for (const key of keysToDelete) {
+    window.sessionStorage.removeItem(key)
   }
 }
 

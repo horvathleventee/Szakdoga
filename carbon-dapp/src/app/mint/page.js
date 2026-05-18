@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useAccount, useReadContract, useWriteContract } from 'wagmi'
 import { allowance20Abi } from '../../abi/Allowance20'
+import { prettyError } from '../../lib/errorMessages'
 
 const CAC = process.env.NEXT_PUBLIC_ALLOWANCE20_ADDRESS
 
@@ -52,7 +53,7 @@ export default function MintFromQuotaPage() {
           <button className="btn" onClick={doMint} disabled={!isConnected || isPending || !nAmt || over}>
             {isPending ? 'Minting…' : 'Mint'}
           </button>
-          {txError && <span style={{color:'crimson', fontSize:12}}>{txError.message}</span>}
+          {txError && <span style={{color:'crimson', fontSize:12}}>{prettyError(txError)}</span>}
         </div>
 
         <p className="subtle" style={{marginTop:10}}>

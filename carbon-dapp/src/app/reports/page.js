@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import QRCode from 'react-qr-code'
+import { prettyError } from '../../lib/errorMessages'
 
 export default function ReportsPage() {
   const [logs, setLogs] = useState([])
@@ -17,7 +18,7 @@ export default function ReportsPage() {
       if (!response.ok) throw new Error(data?.error || 'Failed to load reports')
       setLogs(data.rows || [])
     } catch (e) {
-      setError(e?.message || String(e))
+      setError(prettyError(e))
     } finally {
       setLoading(false)
     }

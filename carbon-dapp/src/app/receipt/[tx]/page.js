@@ -6,6 +6,7 @@ import QRCode from 'react-qr-code'
 import { usePublicClient } from 'wagmi'
 import { decodeEventLog } from 'viem'
 import { allowance20Abi } from '../../../abi/Allowance20'
+import { prettyError } from '../../../lib/errorMessages'
 
 const CAC = process.env.NEXT_PUBLIC_ALLOWANCE20_ADDRESS
 
@@ -90,7 +91,7 @@ export default function ReceiptPage() {
       } catch (error) {
         setState({
           loading: false,
-          error: error?.message || String(error),
+          error: prettyError(error),
           found: false,
           data: null,
         })
