@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useAccount, useDisconnect } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -10,9 +11,11 @@ export default function SettingsPage() {
   const { address, isConnected } = useAccount()
   const { disconnect } = useDisconnect()
   const queryClient = useQueryClient()
+  const [notice, setNotice] = useState('')
 
   function clearCache() {
     try {
+      setNotice('')
       queryClient.clear()
       // wagmi store + egyéb saját cache-ek
       if (typeof window !== 'undefined') {
@@ -20,9 +23,10 @@ export default function SettingsPage() {
         // ha mást is eltároltál:
         // localStorage.removeItem('your-app-key')
       }
-      alert('Local cache cleared.')
+      setNotice('Local cache cleared.')
     } catch (e) {
       console.error(e)
+      setNotice('Failed to clear local cache.')
     }
   }
 
@@ -46,6 +50,7 @@ export default function SettingsPage() {
           <button className="btn" onClick={() => disconnect()}>Disconnect</button>
           <button className="btn" onClick={clearCache}>Clear local cache</button>
         </div>
+        {notice && <div className="subtle" style={{ marginTop: 10 }}>{notice}</div>}
       </section>
     </main>
   )
