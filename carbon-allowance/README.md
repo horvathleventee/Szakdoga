@@ -1,71 +1,63 @@
 # carbon-allowance
 
-A `carbon-allowance` a szakdolgozati projekt smart contract es deployment resze.  
-Ez a csomag kezeli a CAC tokenhez, a registryhez es a marketplace modokhoz tartozo Solidity szerzodeseket.
+A `carbon-allowance` a projekt okosszerződéses rétege. Ez a mappa tartalmazza a Solidity contractokat, a Hardhat konfigurációt, a deploy scripteket és a contract teszteket.
 
-## Fobb elemek
+## Kapcsolódó élő demók
 
-- `CacRegistry`
-  - vallalati profilok
-  - KYC statusz
-  - operator jogosultsagok
-- `Allowance20`
-  - CAC token
-  - kvota kezeles
-  - surrender funkcio
-- marketplace contractok
-  - fixed price
-  - open auction
-  - buy order
-  - blind auction
-  - dutch auction
-  - bundle sale
-  - direct offer
+- Fő dApp: https://carbon-bice-xi.vercel.app
+- Kvótakezelő demo app: https://carbondummy.vercel.app
 
-## Technologiak
+## Szerepe a rendszerben
 
-- Solidity
-- Hardhat
-- OpenZeppelin Contracts
-- dotenv
+Ez a modul felel a karbonkredit-token, a vállalati registry, a KYC státuszok, a kvótakezelés és a piactéri contractok blokklánc oldali működéséért. A frontend és a kvótakezelő alkalmazás ezekkel a contractokkal kommunikál.
 
-## Fontos scriptek
+## Fontos contractok
 
-- `scripts/deploy.js`
-- `scripts/deploy_all.js`
-- `scripts/grant_quota_role.js`
-- `scripts/sync-env.js`
-- `scripts/mint.js`
-- `scripts/surrender.js`
+- `contracts/CacRegistry.sol`: vállalati profilok, KYC státusz, operator jogosultság.
+- `contracts/Allowance20.sol`: CAC token, kvóta alapján történő mintelés, surrender funkció.
+- `contracts/FixedMarket.sol`: fix áras eladás.
+- `contracts/OpenAuctionMarket.sol`: nyílt aukció.
+- `contracts/BuyOrderMarket.sol`: vételi ajánlatok.
+- `contracts/BlindAuctionMarket.sol`: commit-reveal alapú vak aukció.
+- `contracts/DutchAuctionMarket.sol`: holland aukció.
+- `contracts/BundleSaleMarket.sol`: csomagos értékesítés.
+- `contracts/DirectOfferMarket.sol`: direkt ajánlatos kereskedés.
 
-## Futtatas lokalban
+## Előfeltételek
 
-Telepites:
+- Node.js és npm
+- Sepolia RPC URL
+- Sepolia test ETH a deployer címen
+- Privát kulcs a deployhoz
+
+## Telepítés
 
 ```powershell
 cd carbon-allowance
 npm install
 ```
 
-Compile:
+## Compile
 
 ```powershell
 npm run compile
 ```
 
-Teszt:
+## Tesztek
 
 ```powershell
 npm test
 ```
 
-Lokalis node:
+## Lokális futtatás
+
+Első terminálban Hardhat node:
 
 ```powershell
 npm run node
 ```
 
-Lokalis teljes deploy:
+Második terminálban teljes lokális deploy:
 
 ```powershell
 npm run deploy:all:local
@@ -73,42 +65,57 @@ npm run deploy:all:local
 
 ## Sepolia deploy
 
+`.env` példa:
+
+```env
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/...
+PRIVATE_KEY=0x...
+SERVER_PK=0x...
+SERVER_ADDRESS=0x...
+OPERATOR=0x...
+```
+
+Deploy:
+
 ```powershell
-cd carbon-allowance
 npm run deploy:all:sepolia
 ```
 
-Quota setter jog adasa:
+Kvótaállító jogosultság újraadása:
 
 ```powershell
 npm run grant:quota:sepolia
 ```
 
-## Szükséges env valtozok
+## Fontos scriptek
 
-Peldak:
+- `scripts/deploy_all.js`: teljes contract rendszer deployolása.
+- `scripts/sync-env.js`: contract címek szinkronizálása frontend env fájlokba.
+- `scripts/grant_quota_role.js`: quota setter jogosultság kiosztása.
+- `scripts/mint.js`: teszt mintelés.
+- `scripts/surrender.js`: teszt surrender tranzakció.
+- `scripts/admin_kyc.js`: admin/KYC műveletek tesztelése.
 
-```env
-SEPOLIA_RPC_URL=...
-PRIVATE_KEY=...
-SERVER_PK=...
-SERVER_ADDRESS=...
-CAC_ADDRESS=...
-```
+## Deploy után keletkező fájlok
 
-## Kimeneti fajlok
+A deploy script `.addr.*.local` fájlokat hozhat létre. Ezek lokális segédfájlok a contract címekhez. Publikus repositoryba általában nem szükséges őket commitolni, mert a deploy során újragenerálhatók.
 
-A deploy folyamat letrehozhat `.addr.*.local` fajlokat. Ezek lokalis segedfajlok, nem szuksegesek a repositoryban, ezert erdemes ignore-olni oket.
+## Kapcsolat a többi modullal
 
-## Kapcsolat a frontenddel
+Sikeres deploy után a script frissítheti:
 
-Ez a projekt a deploy utan a frontendhez szukseges cimeket is eloallitja, amelyeket a `carbon-dapp` es a `quota-calculator` tud felhasznalni.
+- `../carbon-dapp/.env.local`
+- `../quota-calculator/.env.local`
 
-## Megjegyzes
+Ez azért fontos, mert a frontend és a kvótakezelő csak akkor tud helyesen működni, ha az aktuális Sepolia contract címeket használja.
 
-Production vagy publikus demo kornyezetben kulonosen fontos:
+## Gyakori hibák
 
-- a deployer kulcs biztonsagos kezelese
-- a backend wallet kulon kezelese
-- a helyes Sepolia RPC beallitas
-- a frontend env-ek szinkronban tartasa az uj contract cimekkel
+- `insufficient funds`: nincs elég Sepolia ETH a deployer walleten.
+- `missing private key`: nincs beállítva `PRIVATE_KEY`.
+- `missing RPC URL`: nincs beállítva `SEPOLIA_RPC_URL`.
+- frontend hibás contract címeket olvas: deploy után újra kell szinkronizálni az env fájlokat, majd újra kell deployolni a frontendet is.
+
+## Biztonsági megjegyzés
+
+A `.env` fájl privát kulcsokat tartalmazhat. Ezeket nem szabad commitolni, képernyőképen megosztani vagy publikus helyre feltölteni.

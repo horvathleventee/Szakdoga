@@ -1,95 +1,147 @@
 # carbon-dapp
 
-A `carbon-dapp` a szakdolgozati projekt fo felhasznaloi felulete.  
-Ez egy Next.js alapu webalkalmazas, amely a Sepolia halozaton futtathato CAC smart contractokhoz kapcsolodik.
+A `carbon-dapp` a projekt fő webes felülete. Ez egy Next.js alapú decentralizált alkalmazás, amely a Sepolia hálózaton telepített karbonkredit contractokkal kommunikál.
 
-## Fobb funkciok
+## Élő oldal
 
-- wallet connect
-- dashboard es token egyenleg megjelenites
-- vallalati profilkezeles
-- KYC status megjelenites
-- dokumentum- es metadata-feltoltes Pinata / IPFS hasznalataval
-- admin oldal KYC jovahagyashoz
-- surrender riportok
-- receipt oldal QR tamogatassal
-- tobbfele marketplace oldal
+https://carbon-bice-xi.vercel.app
 
-## Technologiak
+Kapcsolódó kvótakezelő demo:
 
-- Next.js 16
-- React 19
+https://carbondummy.vercel.app
+
+## Fő funkciók
+
+- Wallet csatlakoztatás.
+- Dashboard token egyenleggel és marketplace áttekintéssel.
+- Vállalati profil létrehozása és dokumentumfeltöltés.
+- Pinata/IPFS alapú metadata és fájltárolás.
+- Admin oldal KYC jóváhagyáshoz és elutasításhoz.
+- Karbonkredit mintelés kvóta alapján.
+- Karbonkredit transfer és surrender.
+- Riportok és surrender események.
+- Tranzakciós receipt oldal QR támogatással.
+- Piactéri oldalak több kereskedési móddal.
+
+## Fontos oldalak
+
+- `/`: dashboard
+- `/profile`: vállalati profil és dokumentumfeltöltés
+- `/admin`: admin/KYC jóváhagyás
+- `/mint`: kvóta alapján történő mintelés
+- `/reports`: surrender riportok
+- `/receipt/[tx]`: tranzakciós bizonylat
+- `/marketplace/sell-fixed`: fix áras eladás
+- `/marketplace/open-auction`: nyílt aukció
+- `/marketplace/blind-auction`: vak aukció
+- `/marketplace/dutch`: holland aukció
+- `/marketplace/buy-orders`: vételi ajánlatok
+- `/marketplace/bundle`: csomagos eladás
+- `/marketplace/offers`: direkt ajánlatok
+
+## Technológiák
+
+- Next.js
+- React
 - Wagmi
 - Viem
 - React Query
 - Pinata / IPFS
+- Vercel
 
-## Mappa szerepe
-
-Ez a csomag csak a frontendet tartalmazza.  
-A contract deployment es a blokklanc oldali logika a `../carbon-allowance` projektben talalhato.
-
-## Futtatas lokalban
+## Telepítés
 
 ```powershell
 cd carbon-dapp
 npm install
+```
+
+## Lokális futtatás
+
+```powershell
 npm run dev
 ```
 
-Build ellenorzes:
+Alapértelmezett URL:
+
+```text
+http://localhost:3000
+```
+
+## Ellenőrzés
+
+Lint:
 
 ```powershell
 npm run lint
+```
+
+Production build:
+
+```powershell
 npm run build
 ```
 
-## Szükséges env valtozok
+Production szerver helyben:
 
-Peldak:
-
-```env
-NEXT_PUBLIC_RPC_URL=...
-NEXT_PUBLIC_CHAIN_ID=11155111
-NEXT_PUBLIC_ALLOWANCE20_ADDRESS=...
-NEXT_PUBLIC_REGISTRY_ADDRESS=...
-NEXT_PUBLIC_MARKET_FIXED_ADDRESS=...
-NEXT_PUBLIC_MARKET_OPEN_AUCTION_ADDRESS=...
-NEXT_PUBLIC_MARKET_BUY_ORDER_ADDRESS=...
-NEXT_PUBLIC_MARKET_BLIND_AUCTION_ADDRESS=...
-NEXT_PUBLIC_MARKET_DUTCH_ADDRESS=...
-NEXT_PUBLIC_MARKET_BUNDLE_ADDRESS=...
-NEXT_PUBLIC_MARKET_OFFER_ADDRESS=...
-PINATA_JWT=...
-PINATA_GATEWAY=...
-NEXT_PUBLIC_PINATA_GATEWAY=...
+```powershell
+npm run start
 ```
 
-Az env-eket helyileg `.env.local` fajlban, productionben pedig Vercel environment variable-kent erdemes kezelni.
+## Környezeti változók
 
-## Fontos oldalak
+Helyben `.env.local` fájlban, Vercelen pedig Environment Variables alatt kell beállítani.
 
-- `/` dashboard
-- `/profile` vallalati profil es dokumentumok
-- `/admin` KYC approval
-- `/reports` surrender riportok
-- `/receipt/[tx]` tranzakcios receipt
-- `/marketplace/*` piacteri oldalak
+```env
+NEXT_PUBLIC_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/...
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_ALLOWANCE20_ADDRESS=0x...
+NEXT_PUBLIC_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_MARKET_FIXED_ADDRESS=0x...
+NEXT_PUBLIC_MARKET_OPEN_AUCTION_ADDRESS=0x...
+NEXT_PUBLIC_MARKET_BUY_ORDER_ADDRESS=0x...
+NEXT_PUBLIC_MARKET_BLIND_AUCTION_ADDRESS=0x...
+NEXT_PUBLIC_MARKET_DUTCH_ADDRESS=0x...
+NEXT_PUBLIC_MARKET_BUNDLE_ADDRESS=0x...
+NEXT_PUBLIC_MARKET_OFFER_ADDRESS=0x...
+PINATA_JWT=...
+PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs/
+NEXT_PUBLIC_PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs/
+```
 
-## Hosting
+Fontos: a `PINATA_JWT` nem publikus változó, ezért nem `NEXT_PUBLIC_` prefixszel szerepel. A feltöltési route-ok szerveroldalon használják.
 
-Javasolt hosting: Vercel
+## Vercel deploy
 
-Ajánlott beallitas:
+Ajánlott beállítás:
+
 - Framework: Next.js
 - Root directory: `carbon-dapp`
-- Production env-ek: a helyi `.env.local` alapjan
+- Build command: `npm run build`
+- Output: Next.js alapértelmezett
 
-## Megjegyzes
+Deploy után ellenőrizni kell:
 
-A projektben tobb oldal blokklanc adatokat olvas es tranzakciokat kuld. Emiatt production hasznalatnal kiemelten fontos:
+- a Sepolia RPC URL helyes-e,
+- a contract címek az aktuális deployból származnak-e,
+- a Pinata JWT működik-e,
+- a wallet Sepolia hálózatra van-e állítva.
 
-- a helyes RPC URL
-- a pontos contract cimek
-- a Pinata token biztonsagos kezelese
-- a wallet csatlakozas Sepolia halozaton
+## Tipikus használati sorrend
+
+1. Wallet csatlakoztatása.
+2. Profil létrehozása a `/profile` oldalon.
+3. Dokumentum feltöltése Pinata/IPFS segítségével.
+4. Admin jóváhagyás a `/admin` oldalon.
+5. Kvóta alapján CAC mintelés.
+6. Transfer, surrender vagy marketplace tranzakció indítása.
+7. Események és riportok ellenőrzése.
+
+## Kapcsolódó modulok
+
+- A contractokat a `../carbon-allowance` modul tartalmazza.
+- A kvótakezelő demo a `../quota-calculator` modulban található.
+
+## Biztonsági megjegyzés
+
+Privát kulcsot nem kezel a frontend. A tranzakciókat a felhasználó saját walletje írja alá. A szerveroldali API route-oknál a Pinata JWT-t és az admin/profil feltöltési aláírásokat külön védeni kell.
